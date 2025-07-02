@@ -1,0 +1,26 @@
+# Configuración de Build de Netlify
+# Este bloque define los comandos y directorios para el despliegue.
+
+[build]
+  # Directorio que contiene los archivos del frontend (HTML, CSS, JS).
+  # Netlify publicará los archivos de esta carpeta.
+  publish = "public/"
+
+  # Directorio donde se encuentran nuestras funciones serverless (backend).
+  # Netlify buscará aquí las funciones para desplegarlas.
+  functions = "netlify/functions/"
+
+# Redirecciones y reescrituras
+# Esta regla es fundamental para una Single Page Application (SPA) y para que
+# nuestras llamadas a la API funcionen correctamente.
+# Redirige todas las solicitudes a la función serverless 'generate-block'.
+
+[[redirects]]
+  # La ruta que el frontend usará para llamar a la función.
+  from = "/api/generate-block"
+  
+  # La función real que se ejecutará en el backend.
+  to = "/.netlify/functions/generate-block"
+  
+  # Código de estado HTTP 200 (OK) para que se maneje como una llamada de API exitosa.
+  status = 200

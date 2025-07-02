@@ -1,0 +1,30 @@
+# Dependencias y módulos de Node.js
+# Estos se instalan a través de 'npm install' y no deben ser subidos a Git.
+node_modules/
+
+# Archivos de entorno
+# Contiene variables sensibles como la API KEY. Nunca debe ser subido a Git.
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Archivos de log
+# Generados durante la ejecución o depuración.
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+
+# Directorio de build de Netlify
+# Netlify genera este directorio durante el despliegue.
+.netlify/
+
+# Archivos de caché de editores
+.vscode/
+.idea/

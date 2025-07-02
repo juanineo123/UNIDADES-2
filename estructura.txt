@@ -1,0 +1,26 @@
+generador-unidades de aprendizaje/
+|
+|   #== Archivos de Configuración y Raíz ==
+|
+├── .env                    # (Local) Para guardar la GEMINI_API_KEY de forma segura.
+├── netlify.toml            # Configuración de despliegue y funciones de Netlify.
+└── package.json            # Define el proyecto, scripts y dependencias (Node.js).
+|
+|   #== Carpeta Pública (Frontend) ==
+|
+├── public/
+|   |
+|   ├── index.html          # Archivo principal que contendrá el wizard.
+|   |
+|   ├── css/
+|   |   └── style.css       # Hoja de estilos para el diseño futurista.
+|   |
+|   └── js/
+|       ├── main.js         # Lógica del cliente (control del wizard, UI, llamadas a la API).
+|       └── data.js         # Base de datos local (áreas, grados, competencias del currículo).
+|
+|   #== Funciones Serverless (Backend) ==
+|
+└── netlify/
+    └── functions/
+        └── generate-block.js # Función Node.js que llamará a la API de Gemini.

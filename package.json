@@ -1,0 +1,15 @@
+{
+  "name": "generador-unidades",
+  "version": "1.0.0",
+  "description": "Generador de unidades de aprendizaje con Gemini API y Netlify Functions.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "author": "Juan Manuel Caicedo Oliva & Gemini",
+  "license": "ISC",
+  "dependencies": {
+    "@google/generative-ai": "^0.11.4",
+    "dotenv": "^16.4.5"
+  }
+}

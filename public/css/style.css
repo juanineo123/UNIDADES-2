@@ -1,0 +1,141 @@
+/* === FUENTES PERSONALIZADAS === */
+/* Se definen las familias de fuentes que importamos en el HTML. */
+.font-orbitron {
+    font-family: 'Orbitron', sans-serif;
+}
+.font-rajdhani {
+    font-family: 'Rajdhani', sans-serif;
+}
+
+/* === ESTILOS BASE Y DE FONDO === */
+body {
+    /* Fondo oscuro con un sutil gradiente radial para dar profundidad. */
+    background-color: #0a0f1f;
+    background-image: radial-gradient(circle at top right, rgba(0, 255, 255, 0.1), transparent 40%);
+    font-family: 'Rajdhani', sans-serif;
+}
+
+/* === ESTILOS PARA CAMPOS DE FORMULARIO (INPUTS, SELECTS, TEXTAREAS) === */
+.input-field {
+    background-color: rgba(17, 24, 39, 0.8); /* Fondo oscuro semi-transparente */
+    border: 1px solid #374151; /* Borde sutil gris */
+    color: #e5e7eb; /* Texto claro */
+    border-radius: 0.5rem; /* Bordes redondeados */
+    padding: 0.75rem 1rem;
+    width: 100%;
+    transition: all 0.3s ease; /* Transición suave para efectos */
+    font-size: 1rem;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #22d3ee; /* Borde cian al enfocar */
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.3); /* Resplandor cian */
+}
+
+.input-field::placeholder {
+    color: #6b7280; /* Color del texto de marcador de posición */
+}
+
+/* Estilo para los selects cuando están deshabilitados */
+.input-field:disabled {
+    background-color: rgba(17, 24, 39, 0.5);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+/* === ESTILOS PARA BOTONES === */
+.btn {
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 700;
+    font-family: 'Orbitron', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border: none;
+}
+
+.btn-primary {
+    background-color: #06b6d4; /* Color cian principal */
+    color: #ffffff;
+    box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+.btn-primary:hover {
+    background-color: #0891b2; /* Cian más oscuro al pasar el mouse */
+    box-shadow: 0 0 20px rgba(6, 182, 212, 0.8);
+    transform: translateY(-2px); /* Ligero levantamiento */
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: #9ca3af;
+    border: 1px solid #4b5563;
+}
+
+.btn-secondary:hover {
+    background-color: #374151;
+    color: #e5e7eb;
+    border-color: #6b7280;
+}
+
+/* === ANIMACIÓN PARA EL BOTÓN DE GENERAR === */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+    }
+    50% {
+        box-shadow: 0 0 25px rgba(6, 182, 212, 1);
+    }
+}
+
+.btn-generate-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* === ESTILOS PARA EL WIZARD === */
+.step {
+    transition: opacity 0.5s ease-in-out;
+}
+
+.step.active {
+    display: block;
+}
+
+.step.hidden {
+    display: none;
+    opacity: 0;
+}
+
+/* === ESTILOS PARA CHECKBOXES DE COMPETENCIAS === */
+#competencias-checkboxes label {
+    display: flex;
+    align-items: center;
+    padding: 0.5rem;
+    border-radius: 0.375rem;
+    transition: background-color 0.2s ease;
+}
+
+#competencias-checkboxes label:hover {
+    background-color: rgba(34, 211, 238, 0.1);
+}
+
+#competencias-checkboxes input[type="checkbox"] {
+    width: 1.25rem;
+    height: 1.25rem;
+    margin-right: 0.75rem;
+    accent-color: #06b6d4; /* Color del check */
+    cursor: pointer;
+}
+
+/* === ESTILOS PARA LA UNIDAD GENERADA (Output) === */
+#unidad-generada h1, #unidad-generada h2, #unidad-generada h3 {
+    font-family: 'Orbitron', sans-serif;
+    color: #22d3ee;
+    border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+    padding-bottom: 0.5rem;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+}
