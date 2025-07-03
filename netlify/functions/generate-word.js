@@ -1,4 +1,4 @@
-// Archivo: netlify/functions/generate-word.js (VERSIÓN 1.5 - ENCABEZADOS DE TABLA FINALES)
+// Archivo: netlify/functions/generate-word.js (VERSIÓN 1.6 - FLEXIBILIDAD EN SECCIÓN 'PRODUCTO')
 
 const {
     Document,
@@ -12,10 +12,9 @@ const {
     AlignmentType,
     WidthType,
     HeadingLevel,
-    VerticalAlign, // Se añade para la alineación vertical
+    VerticalAlign,
 } = require("docx");
 
-// --- FUNCIONES AUXILIARES ---
 const parseRuns = (text = "") => {
     if (typeof text !== 'string') return [new TextRun("")];
     const runs = [];
@@ -67,7 +66,6 @@ const createBulletedParagraphs = (text = "", alignment = AlignmentType.JUSTIFIED
     }).filter(Boolean);
 };
 
-// --- FUNCIÓN PRINCIPAL DE NETLIFY ---
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') { return { statusCode: 405, body: 'Method Not Allowed' }; }
 
@@ -100,9 +98,15 @@ exports.handler = async (event) => {
             }));
 
             const markdown = generatedMarkdownContent[section.id] || "";
+            
+            // =========================================================================
+            // CORRECCIÓN FINAL: Se añade 'producto' a la lista de secciones que
+            // pueden ser interpretadas como una tabla.
+            // =========================================================================
+            const tableSections = ['datos', 'propositos-aprendizaje', 'competencias-transversales', 'evaluacion', 'secuencia', 'producto'];
 
-            const tableSections = ['datos', 'propositos-aprendizaje', 'competencias-transversales', 'evaluacion', 'secuencia'];
             if (tableSections.includes(section.id) && markdown.includes('|')) {
+                // Esta lógica ahora se aplicará también a la sección 'producto' si contiene una tabla
                 const lines = markdown.split('\n').filter(line => line.includes('|'));
                 const tableRows = lines.map((line, rowIndex) => {
                     if (line.includes('---')) return null;
@@ -110,9 +114,6 @@ exports.handler = async (event) => {
                         const isHeader = rowIndex === 0;
                         let cellChildren;
 
-                        // =================================================================
-                        // AJUSTE FINAL: Lógica específica para celdas de encabezado
-                        // =================================================================
                         if (isHeader) {
                             cellChildren = [new Paragraph({
                                 alignment: AlignmentType.CENTER,
@@ -122,7 +123,6 @@ exports.handler = async (event) => {
                                 })]
                             })];
                         } else {
-                            // Para el resto de celdas, se usa la alineación a la izquierda
                             cellChildren = createBulletedParagraphs(
                                 cellContent.trim(),
                                 AlignmentType.LEFT
