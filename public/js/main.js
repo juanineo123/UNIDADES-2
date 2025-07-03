@@ -1,10 +1,7 @@
 // ===================================================================================
-//  LÓGICA PRINCIPAL DEL FRONTEND (main.js) - VERSIÓN FINAL Y PROFESIONAL
+//  LÓGICA PRINCIPAL DEL FRONTEND (main.js) - VERSIÓN FINAL
 // ===================================================================================
-// Este archivo controla toda la interactividad del wizard, la gestión de datos
-// del formulario, la comunicación con la API y la renderización del contenido.
-// Utiliza 'marked.js' para convertir Markdown a HTML y 'FileSaver.js' para
-// generar el documento de Word con formato profesional y a prueba de errores.
+//  Ahora, la función de descarga se comunica con la función de Netlify.
 // ===================================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const outputContainer = document.getElementById('output-container');
     const steps = document.querySelectorAll('.step');
     
-    // Controles del Paso 1
     const formStep1 = document.getElementById('form-step-1');
     const nivelSelect = document.getElementById('nivel');
     const gradoSelect = document.getElementById('grado');
@@ -23,21 +19,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const competenciasContainer = document.getElementById('competencias-checkboxes');
     const btnNext1 = document.getElementById('btn-next-1');
 
-    // Controles del Paso 2
     const btnPrev2 = document.getElementById('btn-prev-2');
     const btnNext2 = document.getElementById('btn-next-2');
-    // === NUEVAS REFERENCIAS PARA SITUACIÓN SIGNIFICATIVA ===
     const situacionSourceSelect = document.getElementById('situacion-source');
     const situacionManualContainer = document.getElementById('situacion-manual-container');
     const situacionManualTextarea = document.getElementById('situacion-manual');
-    // =======================================================
 
-    // Controles del Paso 3
     const resumenContainer = document.getElementById('resumen-datos');
     const btnPrev3 = document.getElementById('btn-prev-3');
     const btnGenerate = document.getElementById('btn-generate');
 
-    // Contenedor de Salida
     const unidadGeneradaContainer = document.getElementById('unidad-generada');
     const finalButtonsContainer = document.getElementById('final-buttons');
     const btnDownload = document.getElementById('btn-download');
@@ -45,12 +36,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // === 2. ESTADO DE LA APLICACIÓN ===
     let wizardData = {};
+    let generatedMarkdownContent = {};
 
     // === 3. FUNCIONES DE INICIALIZACIÓN ===
     function initialize() {
         fechaInput.valueAsDate = new Date();
         populateNiveles();
         setupEventListeners();
+        // Ya no se necesita el 'checkDependencies'
     }
 
     function populateNiveles() {
@@ -168,17 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
             tituloUnidad: document.getElementById('titulo-unidad').value,
             temasClave: document.getElementById('temas-clave').value,
             contexto: document.getElementById('contexto').value,
-            // === NUEVOS DATOS DE SITUACIÓN SIGNIFICATIVA ===
             situacionSource: situacionSourceSelect.value,
             situacionManual: situacionManualTextarea.value,
-            // ===============================================
         };
         createSummary();
         goToStep(3);
     }
 
     function createSummary() {
-        // Lógica para mostrar la fuente de la situación significativa en el resumen
         let situacionResumen = 'Generada por IA';
         if (wizardData.situacionSource === 'manual' && wizardData.situacionManual) {
             situacionResumen = `Manual: <em>"${wizardData.situacionManual.substring(0, 50)}..."</em>`;
@@ -187,7 +177,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         resumenContainer.innerHTML = `
-            <h3 class="text-xl font-bold text-cyan-300 mb-4">Confirmar Datos</h3>
+            <h3 class="text-xl font-bold font-rajdhani text-cyan-300 mb-4">Confirmar Datos</h3>
             <ul class="space-y-2 text-gray-300">
                 <li><strong>Título:</strong> ${wizardData.tituloUnidad || 'No definido'}</li>
                 <li><strong>Nivel:</strong> ${wizardData.nivel}</li>
@@ -203,13 +193,14 @@ document.addEventListener('DOMContentLoaded', () => {
     async function startGenerationProcess() {
         wizardContainer.classList.add('hidden');
         outputContainer.classList.remove('hidden');
-        unidadGeneradaContainer.innerHTML = ''; // Limpiar el contenedor antes de empezar
-
+        unidadGeneradaContainer.innerHTML = '';
+        generatedMarkdownContent = {};
+        
         const unitStructure = [
             { id: 'titulo', title: 'I. TÍTULO DE LA UNIDAD', needsAI: false },
             { id: 'datos', title: 'II. DATOS INFORMATIVOS', needsAI: false },
             { id: 'justificacion', title: 'III. JUSTIFICACIÓN', needsAI: true },
-            { id: 'situacion', title: 'IV. SITUACIÓN SIGNIFICATIVA', needsAI: true }, // Se mantiene como 'needsAI' para el flujo
+            { id: 'situacion', title: 'IV. SITUACIÓN SIGNIFICATIVA', needsAI: true },
             { id: 'producto', title: 'V. PRODUCTO DE LA UNIDAD', needsAI: true },
             { id: 'proposito', title: 'VI. PROPÓSITO DE LA UNIDAD', needsAI: true },
             { id: 'propositos-aprendizaje', title: 'VII. PROPÓSITOS DE APRENDIZAJE', needsAI: true },
@@ -236,20 +227,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             let contentMarkdown = '';
             
-            // === LÓGICA DINÁMICA PARA LA SITUACIÓN SIGNIFICATIVA ===
             if (block.id === 'situacion' && wizardData.situacionSource === 'manual' && wizardData.situacionManual) {
-                // Si es manual y hay texto, se usa el contenido estático.
                 contentMarkdown = generateStaticContent(block.id);
             } else if (block.needsAI) {
-                // Si no, y necesita IA (o es la situación en modo IA), se llama a la API.
                 contentMarkdown = await generateAIContent(block.id);
             } else {
-                // Para el resto de bloques estáticos.
                 contentMarkdown = generateStaticContent(block.id);
             }
             
+            generatedMarkdownContent[block.id] = contentMarkdown;
+            
             await new Promise(res => setTimeout(res, 500));
-            contentDiv.innerHTML = marked.parse(contentMarkdown);
+            contentDiv.innerHTML = window.marked.parse(contentMarkdown);
         }
         
         finalButtonsContainer.classList.remove('hidden');
@@ -268,12 +257,10 @@ document.addEventListener('DOMContentLoaded', () => {
 | **Grado** | **Área** | **Duración** | **Fecha** |
 | ${wizardData.grado} | ${wizardData.area} | ${wizardData.duracion} semana(s) | ${wizardData.fecha} |
 `;
-            // === NUEVO CASO PARA LA SITUACIÓN SIGNIFICATIVA MANUAL ===
             case 'situacion':
                 return wizardData.situacionManual;
-            // =========================================================
             case 'firmas':
-                return `
+                 return `
 <table style="width:100%; border-collapse:collapse; border:none; margin-top: 80px;">
     <tbody>
         <tr style="background-color:transparent;">
@@ -298,8 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function generateAIContent(blockId) {
         try {
-            // Pasamos el objeto completo de datos a la API.
-            // La API será responsable de decidir si generar la situación o usar la manual.
             const response = await fetch('/api/generate-block', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -318,75 +303,61 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // === 7. FUNCIÓN DE DESCARGA A WORD (SIN CAMBIOS) ===
-    function handleDownload() {
-        const headerContent = `
-            <div style='mso-element:header' id='h1'>
-                <p style='text-align:center; margin:0; font-size:11.0pt;'>"AÑO DEL BICENTENARIO, DE LA CONSOLIDACIÓN DE NUESTRA INDEPENDENCIA, Y DE LA CONMEMORACIÓN DE LAS HEROICAS BATALLAS DE JUNÍN Y AYACUCHO"</p>
-                <p style='text-align:center; margin-top:12.0pt; font-size:14.0pt; font-weight:bold;'>UNIDAD DE APRENDIZAJE N° 01</p>
-            </div>
-        `;
+    // === 7. FUNCIÓN DE DESCARGA REESTRUCTURADA ===
+    async function handleDownload() {
+        console.log("main.js: Solicitud de descarga al servidor...");
+        btnDownload.disabled = true;
+        btnDownload.textContent = 'Generando .docx en servidor...';
 
-        const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Unidad de Aprendizaje</title>`;
-        
-        const styles = `
-            <style>
-                @page WordSection1 {
-                    size: 8.5in 11.0in;
-                    margin: 1.0in 1.0in 1.0in 1.0in;
-                    mso-header: h1;
-                }
-                div.WordSection1 {
-                    page: WordSection1;
-                }
-                p {
-                    text-align: justify;
-                    margin:0;
-                }
-                h3 {
-                    color: #2E74B5;
-                    font-family: 'Times New Roman', serif;
-                    text-align: left;
-                }
-                table {
-                    border-collapse: collapse;
-                    width: 100%;
-                    border: 1px solid black;
-                }
-                th, td {
-                    border: 1px solid black;
-                    padding: 8px;
-                    text-align: left;
-                    vertical-align: top;
-                }
-                th {
-                    background-color: #D9E1F2;
-                    font-weight: bold;
-                }
-                ul { margin: 0; padding-left: 20px; }
-                li { text-align: justify; }
-            </style>
-        `;
-        
-        const bodyContent = unidadGeneradaContainer.innerHTML;
-        const fullHtml = `${header}${styles}</head><body>${headerContent}<div class="WordSection1">${bodyContent}</div></body></html>`;
+        try {
+            // El endpoint de la función de Netlify.
+            // Corresponde a netlify/functions/generate-word.js
+            const endpoint = '/.netlify/functions/generate-word';
 
-        const blob = new Blob(['\ufeff', fullHtml], {
-            type: 'application/msword'
-        });
-        
-        saveAs(blob, `Unidad de Aprendizaje - ${wizardData.tituloUnidad || 'Sin Titulo'}.doc`);
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ wizardData, generatedMarkdownContent })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error del servidor: ${response.statusText}`);
+            }
+
+            // El navegador se encargará de la descarga gracias a las cabeceras
+            // que enviamos desde la función de Netlify.
+            // Para que funcione, necesitamos convertir la respuesta en un blob
+            // y crear una URL para descargarla.
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `Unidad de Aprendizaje - ${wizardData.tituloUnidad || 'Sin Titulo'}.docx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+            
+        } catch (error) {
+            console.error("Error al solicitar la descarga del documento:", error);
+            alert("No se pudo generar el documento. Hubo un error al comunicarse con el servidor.");
+        } finally {
+            btnDownload.disabled = false;
+            btnDownload.textContent = 'Descargar en Word';
+        }
     }
     
     function handleReset() {
         wizardData = {};
+        generatedMarkdownContent = {};
         outputContainer.classList.add('hidden');
         unidadGeneradaContainer.innerHTML = '';
         finalButtonsContainer.classList.add('hidden');
         
         formStep1.reset();
         document.getElementById('form-step-2').reset();
-        situacionManualContainer.classList.add('hidden'); // Ocultar al resetear
+        situacionManualContainer.classList.add('hidden');
         fechaInput.valueAsDate = new Date();
         updateGrados();
         
@@ -414,7 +385,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         btnDownload.addEventListener('click', handleDownload);
 
-        // === NUEVO EVENT LISTENER PARA EL SELECTOR DE SITUACIÓN ===
         situacionSourceSelect.addEventListener('change', (e) => {
             if (e.target.value === 'manual') {
                 situacionManualContainer.classList.remove('hidden');
@@ -422,7 +392,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 situacionManualContainer.classList.add('hidden');
             }
         });
-        // =========================================================
     }
 
     // === 9. INICIO DE LA APLICACIÓN ===
