@@ -58,7 +58,7 @@ export async function generateWordDocument(docx, wizardData, generatedMarkdown) 
                     });
                     return new TableRow({ children: cells });
                 }).filter(row => row !== null);
-                if(tableRows.length > 0) {
+                if (tableRows.length > 0) {
                     docChildren.push(new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
                 }
                 break;
@@ -93,8 +93,43 @@ export async function generateWordDocument(docx, wizardData, generatedMarkdown) 
                 break;
 
             default:
-                const lines = markdown.split('\n');
-                lines.forEach(line => {
+                const allLines = markdown.split('\n');
+                let i = 0;
+                while (i < allLines.length) {
+                    const line = allLines[i];
+
+                    // Detección de tablas de Markdown
+                    if (line.includes('|') && i + 1 < allLines.length && allLines[i + 1].includes('---')) {
+                        const tableLines = [];
+                        // Agrupamos todas las líneas que pertenecen a la tabla
+                        while (i < allLines.length && allLines[i].includes('|')) {
+                            tableLines.push(allLines[i]);
+                            i++;
+                        }
+
+                        // Usamos la misma lógica de creación de tablas que ya tenías
+                        const tableRows = tableLines.map((tableLine, rowIndex) => {
+                            if (tableLine.includes('---')) return null; // Ignorar la línea separadora
+                            const cells = tableLine.split('|').filter(c => c.trim() !== '').map(cellContent => {
+                                const isHeader = rowIndex === 0 || cellContent.includes('**');
+                                return new TableCell({
+                                    children: [new Paragraph({
+                                        alignment: AlignmentType.CENTER,
+                                        children: [new TextRun({ text: cellContent.replace(/\*\*/g, '').trim(), bold: isHeader })]
+                                    })],
+                                    shading: isHeader ? { fill: "D9E1F2" } : undefined,
+                                });
+                            });
+                            return new TableRow({ children: cells });
+                        }).filter(row => row !== null);
+
+                        if (tableRows.length > 0) {
+                            docChildren.push(new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
+                        }
+                        continue; // Continuamos el bucle principal
+                    }
+
+                    // Lógica existente para texto, títulos y listas
                     if (line.startsWith('### ')) {
                         docChildren.push(new Paragraph({
                             children: [new TextRun({ text: line.replace('### ', ''), bold: true, size: 24 })],
@@ -112,7 +147,8 @@ export async function generateWordDocument(docx, wizardData, generatedMarkdown) 
                             alignment: AlignmentType.JUSTIFIED,
                         }));
                     }
-                });
+                    i++;
+                }
                 break;
         }
     }

@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const wizardContainer = document.getElementById('wizard-container');
     const outputContainer = document.getElementById('output-container');
     const steps = document.querySelectorAll('.step');
-    
+
     const formStep1 = document.getElementById('form-step-1');
     const nivelSelect = document.getElementById('nivel');
     const gradoSelect = document.getElementById('grado');
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 competenciasContainer.innerHTML = '<p>No hay competencias para esta área.</p>';
             }
         } else {
-             competenciasContainer.innerHTML = '<p>Seleccione un área para ver las competencias.</p>';
+            competenciasContainer.innerHTML = '<p>Seleccione un área para ver las competencias.</p>';
         }
     }
 
@@ -136,9 +136,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleNextStep1() {
-        const competenciasSeleccionadas = 
+        const competenciasSeleccionadas =
             Array.from(document.querySelectorAll('input[name="competencia"]:checked'))
-                 .map(cb => cb.value);
+                .map(cb => cb.value);
 
         wizardData = {
             ...wizardData,
@@ -154,7 +154,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         goToStep(2);
     }
-    
+
     function handleNextStep2() {
         wizardData = {
             ...wizardData,
@@ -195,7 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
         outputContainer.classList.remove('hidden');
         unidadGeneradaContainer.innerHTML = '';
         generatedMarkdownContent = {};
-        
+
         const unitStructure = [
             { id: 'titulo', title: 'I. TÍTULO DE LA UNIDAD', needsAI: false },
             { id: 'datos', title: 'II. DATOS INFORMATIVOS', needsAI: false },
@@ -220,13 +220,13 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             unidadGeneradaContainer.appendChild(blockElement);
             blockElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
+
             const contentDiv = blockElement.querySelector('.content');
             contentDiv.innerHTML = `<p class="text-cyan-400 animate-pulse">Generando con Gemini...</p>`;
             await new Promise(res => setTimeout(res, 1000));
 
             let contentMarkdown = '';
-            
+
             if (block.id === 'situacion' && wizardData.situacionSource === 'manual' && wizardData.situacionManual) {
                 contentMarkdown = generateStaticContent(block.id);
             } else if (block.needsAI) {
@@ -234,13 +234,13 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 contentMarkdown = generateStaticContent(block.id);
             }
-            
+
             generatedMarkdownContent[block.id] = contentMarkdown;
-            
+
             await new Promise(res => setTimeout(res, 500));
             contentDiv.innerHTML = window.marked.parse(contentMarkdown);
         }
-        
+
         finalButtonsContainer.classList.remove('hidden');
         finalButtonsContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
@@ -260,7 +260,7 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'situacion':
                 return wizardData.situacionManual;
             case 'firmas':
-                 return `
+                return `
 <table style="width:100%; border-collapse:collapse; border:none; margin-top: 80px;">
     <tbody>
         <tr style="background-color:transparent;">
@@ -283,9 +283,45 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    /**
+ * Realiza una solicitud fetch con reintentos automáticos.
+ * @param {string} url La URL a la que se hará la solicitud.
+ * @param {object} options Las opciones para la solicitud fetch.
+ * @param {number} retries El número máximo de intentos.
+ * @param {number} delay El tiempo de espera en milisegundos entre intentos.
+ * @returns {Promise<Response>} La respuesta de la solicitud.
+ */
+    async function fetchWithRetries(url, options, retries = 3, delay = 2500) {
+        for (let i = 0; i < retries; i++) {
+            try {
+                // Intento de realizar la petición
+                const response = await fetch(url, options);
+
+                // Si la respuesta es exitosa (ej. status 200-299), la devolvemos.
+                if (response.ok) {
+                    return response;
+                }
+
+                // Si el servidor da un error (ej. status 500), lanzamos una excepción para reintentar.
+                // Esto es importante para que los errores de servidor también activen un reintento.
+                throw new Error(`Error del servidor: ${response.status} ${response.statusText}`);
+
+            } catch (error) {
+                // Si es el último intento, lanzamos el error definitivo.
+                if (i === retries - 1) {
+                    console.error(`Error final después de ${retries} intentos.`, error);
+                    throw error;
+                }
+
+                // Si no es el último intento, mostramos un aviso y esperamos antes de reintentar.
+                console.warn(`Intento ${i + 1} fallido. Reintentando en ${delay / 1000} segundos...`);
+                await new Promise(resolve => setTimeout(resolve, delay));
+            }
+        }
+    }
     async function generateAIContent(blockId) {
         try {
-            const response = await fetch('/api/generate-block', {
+            const response = await fetchWithRetries('/api/generate-block', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ blockId, unitData: wizardData })
@@ -314,8 +350,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Corresponde a netlify/functions/generate-word.js
             const endpoint = '/.netlify/functions/generate-word';
 
-            const response = await fetch(endpoint, {
-                method: 'POST',
+           const response = await fetchWithRetries(endpoint, {
+            method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ wizardData, generatedMarkdownContent })
             });
@@ -338,7 +374,7 @@ document.addEventListener('DOMContentLoaded', () => {
             a.click();
             window.URL.revokeObjectURL(url);
             a.remove();
-            
+
         } catch (error) {
             console.error("Error al solicitar la descarga del documento:", error);
             alert("No se pudo generar el documento. Hubo un error al comunicarse con el servidor.");
@@ -347,24 +383,24 @@ document.addEventListener('DOMContentLoaded', () => {
             btnDownload.textContent = 'Descargar en Word';
         }
     }
-    
+
     function handleReset() {
         wizardData = {};
         generatedMarkdownContent = {};
         outputContainer.classList.add('hidden');
         unidadGeneradaContainer.innerHTML = '';
         finalButtonsContainer.classList.add('hidden');
-        
+
         formStep1.reset();
         document.getElementById('form-step-2').reset();
         situacionManualContainer.classList.add('hidden');
         fechaInput.valueAsDate = new Date();
         updateGrados();
-        
+
         wizardContainer.classList.remove('hidden');
         goToStep(1);
     }
-    
+
     // === 8. CONFIGURACIÓN DE EVENT LISTENERS ===
     function setupEventListeners() {
         nivelSelect.addEventListener('change', () => {
@@ -373,16 +409,16 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         gradoSelect.addEventListener('change', updateAreas);
         areaSelect.addEventListener('change', updateCompetencias);
-        
+
         btnNext1.addEventListener('click', handleNextStep1);
         btnNext2.addEventListener('click', handleNextStep2);
-        
+
         btnPrev2.addEventListener('click', () => goToStep(1));
         btnPrev3.addEventListener('click', () => goToStep(2));
-        
+
         btnGenerate.addEventListener('click', startGenerationProcess);
         btnReset.addEventListener('click', handleReset);
-        
+
         btnDownload.addEventListener('click', handleDownload);
 
         situacionSourceSelect.addEventListener('change', (e) => {
