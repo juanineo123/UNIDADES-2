@@ -33,13 +33,13 @@ const parseRuns = (text = "") => {
 
 const createBulletedParagraphs = (text = "", alignment = AlignmentType.JUSTIFIED) => {
     if (typeof text !== 'string' || !text.trim()) return [];
-    
+
     const cleanText = text.replace(/<br\s*\/?>/gi, '\n');
 
     return cleanText.split('\n').map(line => {
         const trimmedLine = line.trim();
         if (!trimmedLine) return null;
-        
+
         if (trimmedLine.match(/^#+\s/)) {
             return new Paragraph({
                 spacing: { before: 200, after: 100 },
@@ -52,7 +52,7 @@ const createBulletedParagraphs = (text = "", alignment = AlignmentType.JUSTIFIED
                 ]
             });
         }
-        
+
         if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('- ')) {
             return new Paragraph({
                 children: parseRuns(trimmedLine.substring(2)),
@@ -61,7 +61,7 @@ const createBulletedParagraphs = (text = "", alignment = AlignmentType.JUSTIFIED
                 spacing: { after: 100 },
             });
         }
-        
+
         return new Paragraph({ children: parseRuns(trimmedLine), alignment, spacing: { after: 100 } });
     }).filter(Boolean);
 };
@@ -90,7 +90,7 @@ exports.handler = async (event) => {
             { id: 'recursos', title: 'XI. RECURSOS Y MATERIALES' },
             { id: 'firmas', title: 'XII. CAMPO DE FIRMAS' },
         ];
-        
+
         for (const section of unitStructure) {
             docChildren.push(new Paragraph({
                 children: [new TextRun({ text: section.title, bold: true, size: 24, color: "2E74B5" })],
@@ -98,7 +98,7 @@ exports.handler = async (event) => {
             }));
 
             const markdown = generatedMarkdownContent[section.id] || "";
-            
+
             // =========================================================================
             // CORRECCIÓN FINAL: Se añade 'producto' a la lista de secciones que
             // pueden ser interpretadas como una tabla.
@@ -106,39 +106,36 @@ exports.handler = async (event) => {
             const tableSections = ['datos', 'propositos-aprendizaje', 'competencias-transversales', 'evaluacion', 'secuencia', 'producto'];
 
             if (tableSections.includes(section.id) && markdown.includes('|')) {
-                // Esta lógica ahora se aplicará también a la sección 'producto' si contiene una tabla
-                const lines = markdown.split('\n').filter(line => line.includes('|'));
-                const tableRows = lines.map((line, rowIndex) => {
-                    if (line.includes('---')) return null;
-                    const cells = line.split('|').slice(1, -1).map(cellContent => {
-                        const isHeader = rowIndex === 0;
-                        let cellChildren;
+                const lines = markdown.split('\n').filter(line => line.includes('|') && !line.includes('---'));
+                if (lines.length > 0) {
+                    // --- CORRECCIÓN ---: Se calcula el ancho de las columnas
+                    const headerCellsText = lines[0].split('|').slice(1, -1);
+                    const columnCount = headerCellsText.length;
+                    const columnWidths = columnCount > 0 ? Array(columnCount).fill(100 / columnCount) : [];
 
-                        if (isHeader) {
-                            cellChildren = [new Paragraph({
-                                alignment: AlignmentType.CENTER,
-                                children: [new TextRun({
-                                    text: cellContent.trim().toUpperCase(),
-                                    bold: true
-                                })]
-                            })];
-                        } else {
-                            cellChildren = createBulletedParagraphs(
-                                cellContent.trim(),
-                                AlignmentType.LEFT
-                            );
-                        }
+                    const tableRows = lines.map((line, rowIndex) => {
+                        const cells = line.split('|').slice(1, -1).map(cellContent => {
+                            const isHeader = rowIndex === 0;
+                            const cellChildren = isHeader
+                                ? [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: cellContent.trim().toUpperCase(), bold: true })] })]
+                                : createBulletedParagraphs(cellContent.trim(), AlignmentType.LEFT);
 
-                        return new TableCell({
-                            children: cellChildren.length > 0 ? cellChildren : [new Paragraph("")],
-                            shading: isHeader ? { fill: "D9E1F2" } : undefined,
-                            verticalAlign: VerticalAlign.CENTER,
+                            return new TableCell({
+                                children: cellChildren.length > 0 ? cellChildren : [new Paragraph("")],
+                                shading: isHeader ? { fill: "D9E1F2" } : undefined,
+                                verticalAlign: VerticalAlign.CENTER,
+                                margins: { top: 80, bottom: 80, left: 80, right: 80 },
+                            });
                         });
+                        return new TableRow({ children: cells });
                     });
-                    return new TableRow({ children: cells });
-                }).filter(Boolean);
-                if (tableRows.length > 0) docChildren.push(new Table({ rows: tableRows, width: { size: 100, type: WidthType.PERCENTAGE } }));
 
+                    docChildren.push(new Table({
+                        rows: tableRows,
+                        width: { size: 100, type: WidthType.PERCENTAGE },
+                        columnWidths: columnWidths // Se aplica el ancho calculado
+                    }));
+                }
             } else if (section.id === 'firmas') {
                 const signatureLine = new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun("__________________________")] });
                 docChildren.push(new Table({
@@ -146,24 +143,24 @@ exports.handler = async (event) => {
                     columnWidths: [4250, 500, 4250],
                     borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
                     rows: [
-                        new TableRow({ children: [ new TableCell({ children: [signatureLine], spacing: { after: 100 } }), new TableCell({ children: [] }), new TableCell({ children: [signatureLine] }) ]}),
-                        new TableRow({ children: [ new TableCell({ children: [new Paragraph({ text: wizardData.docente || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Docente", alignment: AlignmentType.CENTER, bold: true })] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ text: wizardData.director || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Director/a", alignment: AlignmentType.CENTER, bold: true })] })]})
+                        new TableRow({ children: [new TableCell({ children: [signatureLine], spacing: { after: 100 } }), new TableCell({ children: [] }), new TableCell({ children: [signatureLine] })] }),
+                        new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: wizardData.docente || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Docente", alignment: AlignmentType.CENTER, bold: true })] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ text: wizardData.director || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Director/a", alignment: AlignmentType.CENTER, bold: true })] })] })
                     ],
                 }));
             } else {
-                 docChildren.push(...createBulletedParagraphs(markdown));
+                docChildren.push(...createBulletedParagraphs(markdown));
             }
         }
-        
+
         const finalDocChildren = docChildren.filter(Boolean);
 
         const doc = new Document({
-            styles: { paragraphStyles: [{ id: "Normal", run: { font: "Calibri", size: 22 }}]},
+            styles: { paragraphStyles: [{ id: "Normal", run: { font: "Calibri", size: 22 } }] },
             sections: [{ children: finalDocChildren }],
         });
 
         const buffer = await Packer.toBuffer(doc);
-        
+
         return {
             statusCode: 200,
             headers: {
