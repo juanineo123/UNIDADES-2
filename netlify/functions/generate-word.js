@@ -59,8 +59,9 @@ exports.handler = async (event) => {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
     try {
-        // --- CORRECCIÓN: Se usa 'formData' en lugar de 'unitData' para coincidir con el frontend ---
-        const { formData, generatedContent } = JSON.parse(event.body);
+        // --- AQUÍ ESTÁ LA CORRECCIÓN ---
+        // Se añade un valor por defecto `{}` para `generatedContent` para evitar el error.
+        const { formData, generatedContent = {} } = JSON.parse(event.body);
         const fechaActual = new Date().toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const doc = new Document({
