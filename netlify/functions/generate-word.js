@@ -3,7 +3,7 @@ const {
     WidthType, AlignmentType, VerticalAlign, ShadingType, BorderStyle
 } = require("docx");
 
-// --- Constantes y Funciones Auxiliares (Sin cambios, pero necesarias) ---
+// --- Constantes y Funciones Auxiliares ---
 const TABLE_WIDTH_DXA = 9360;
 const createSectionTitle = (text) => new Paragraph({ children: [new TextRun({ text, bold: true, size: 24, font: "Calibri" })], heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } });
 const parseMarkdownToTextRuns = (text = "") => {
@@ -52,15 +52,15 @@ const createTableFromMarkdown = (markdownText = "") => {
 };
 
 // ===================================================================================
-//  HANDLER PRINCIPAL (COMPLETAMENTE REESTRUCTURADO)
+//  HANDLER PRINCIPAL (VERSIÓN FINAL CORREGIDA)
 // ===================================================================================
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
     }
     try {
-        // Ahora recibe 'unitData' (datos del form) y 'generatedContent' (el objeto plano)
-        const { unitData, generatedContent } = JSON.parse(event.body);
+        // --- CORRECCIÓN: Se usa 'formData' en lugar de 'unitData' para coincidir con el frontend ---
+        const { formData, generatedContent } = JSON.parse(event.body);
         const fechaActual = new Date().toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const doc = new Document({
@@ -69,21 +69,21 @@ exports.handler = async (event) => {
                 properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
                 children: [
                     // --- TÍTULO Y DATOS GENERALES DE LA UNIDAD ---
-                    new Paragraph({ heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `UNIDAD DE APRENDIZAJE: "${unitData.tituloUnidad}"`, bold: true, allCaps: true, size: 36 })] }),
+                    new Paragraph({ heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `UNIDAD DE APRENDIZAJE: "${formData.tituloUnidad}"`, bold: true, allCaps: true, size: 36 })] }),
                     createSectionTitle("I. DATOS GENERALES"),
                     new Table({
                         width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
                         columnWidths: [Math.floor(TABLE_WIDTH_DXA * 0.3), Math.floor(TABLE_WIDTH_DXA * 0.7)],
                         rows: [
-                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Docente:", bold: true })] })] }), new TableCell({ children: [new Paragraph(unitData.docente || '')] })] }),
-                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Grado y Nivel:", bold: true })] })] }), new TableCell({ children: [new Paragraph(`${unitData.grado || ''} - ${unitData.nivel || ''}`)] })] }),
-                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Área:", bold: true })] })] }), new TableCell({ children: [new Paragraph(unitData.area || '')] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Docente:", bold: true })] })] }), new TableCell({ children: [new Paragraph(formData.docente || '')] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Grado y Nivel:", bold: true })] })] }), new TableCell({ children: [new Paragraph(`${formData.grado || ''} - ${formData.nivel || ''}`)] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Área:", bold: true })] })] }), new TableCell({ children: [new Paragraph(formData.area || '')] })] }),
                             new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Fecha:", bold: true })] })] }), new TableCell({ children: [new Paragraph(fechaActual)] })] }),
-                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Duración:", bold: true })] })] }), new TableCell({ children: [new Paragraph(`${unitData.duracion || ''} semanas`)] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Duración:", bold: true })] })] }), new TableCell({ children: [new Paragraph(`${formData.duracion || ''} semanas`)] })] }),
                         ],
                     }),
 
-                    // --- SECCIONES GENERADAS POR LA IA (NUEVA LÓGICA) ---
+                    // --- SECCIONES GENERADAS POR LA IA ---
                     createSectionTitle("II. JUSTIFICACIÓN"),
                     ...createFormattedParagraphs(generatedContent.justificacion || "No generado."),
 
@@ -111,7 +111,7 @@ exports.handler = async (event) => {
                     createSectionTitle("X. RECURSOS Y MATERIALES"),
                     ...createFormattedParagraphs(generatedContent.recursos || "No generado."),
                     
-                    // --- SECCIÓN DE FIRMAS (SIN CAMBIOS) ---
+                    // --- SECCIÓN DE FIRMAS ---
                     createSectionTitle("XI. FIRMAS"),
                     new Table({
                         width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
@@ -119,14 +119,14 @@ exports.handler = async (event) => {
                         borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
                         rows: [
                             new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "\n\n__________________________", alignment: AlignmentType.CENTER })] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ text: "\n\n__________________________", alignment: AlignmentType.CENTER })] })] }),
-                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: unitData.docente || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Docente", alignment: AlignmentType.CENTER })] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ text: unitData.director || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Director(a)", alignment: AlignmentType.CENTER })] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: formData.docente || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Docente", alignment: AlignmentType.CENTER })] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ text: formData.director || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Director(a)", alignment: AlignmentType.CENTER })] })] }),
                         ],
                     }),
                 ],
             }],
         });
         
-        const safeFileName = (unitData.tituloUnidad || "unidad_de_aprendizaje").replace(/[^a-z0-9áéíóúñü \.,_-]/gim, '').trim().replace(/\s+/g, '_');
+        const safeFileName = (formData.tituloUnidad || "unidad_de_aprendizaje").replace(/[^a-z0-9áéíóúñü \.,_-]/gim, '').trim().replace(/\s+/g, '_');
         const buffer = await Packer.toBuffer(doc);
         return {
             statusCode: 200,
