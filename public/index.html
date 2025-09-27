@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de Unidades de Aprendizaje v-2.0</title>
-  
-<!-- ===== INICIO DEL CÓDIGO GUARDIA DE SEGURIDAD FINAL (Compatible con Netlify) ===== -->
+
+    <!-- ===== INICIO DEL CÓDIGO GUARDIA DE SEGURIDAD FINAL (Compatible con Netlify) ===== -->
     <script type="module">
         // 1. IMPORTACIONES (Siempre al principio)
         import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
@@ -19,14 +20,14 @@
 
             // La configuración de Firebase. Es necesaria para que funcione en Netlify.
             // La seguridad real está en los "Dominios Autorizados" de la consola de Firebase.
+            // ESTA ES LA CONFIGURACIÓN CORRECTA Y UNIFICADA
             const firebaseConfig = {
-                apiKey: "AIzaSyC-Og-9Ju4aWSbmwa6b4OpoHzjPzd073VI",
-                authDomain: "auth.caicedoeduca.com",
-                projectId: "delta-cortex-437020-h5",
-                storageBucket: "delta-cortex-437020-h5.appspot.com",
-                messagingSenderId: "423600255022",
-                appId: "1:423600255022:web:210337d8730803c500afbf",
-                measurementId: "G-2KJ74JH382"
+                apiKey: "AIzaSyD_SCyO4s-fZZS2qBTKEqAFiWP3IPD97Uo",
+                authDomain: "plataforma-escala.firebaseapp.com",
+                projectId: "plataforma-escala",
+                storageBucket: "plataforma-escala.firebasestorage.app",
+                messagingSenderId: "917193676993",
+                appId: "1:917193676993:web:da3a51e59246bd917c1c40"
             };
 
             const suiteLoginPageUrl = 'https://www.caicedoeduca.com/';
@@ -54,54 +55,71 @@
         }
     </script>
     <!-- ===== FIN DEL CÓDIGO GUARDIA DE SEGURIDAD FINAL (Compatible con Netlify) ===== -->
- 
+
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;700&family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;700&family=Orbitron:wght@400;700;900&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body class="bg-gray-900 text-gray-200 font-sans">
 
     <div id="app-container" class="max-w-4xl mx-auto p-4 md:p-8">
-        
+
         <header class="text-center mb-10">
             <h1 class="text-4xl md:text-5xl font-bold font-orbitron text-cyan-400">Generador de Unidades</h1>
             <p class="text-lg text-gray-400 font-rajdhani">Potenciado por Google Gemini</p>
         </header>
 
-        <main id="wizard-container" class="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl shadow-cyan-500/10 border border-gray-700">
+        <main id="wizard-container"
+            class="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl shadow-cyan-500/10 border border-gray-700">
             <div id="step-1" class="step active">
-                <h2 class="text-2xl font-bold font-rajdhani text-cyan-300 border-b-2 border-cyan-500/30 pb-2 mb-6">Paso 1: Datos Informativos</h2>
+                <h2 class="text-2xl font-bold font-rajdhani text-cyan-300 border-b-2 border-cyan-500/30 pb-2 mb-6">Paso
+                    1: Datos Informativos</h2>
                 <form id="form-step-1" class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    
+
                     <div>
-                        <label for="docente" class="block mb-2 text-sm font-medium text-cyan-200">1. Nombre del Docente:</label>
-                        <input type="text" id="docente" placeholder="Nombre del Docente" class="input-field" value="Juan Manuel Caicedo Oliva">
+                        <label for="docente" class="block mb-2 text-sm font-medium text-cyan-200">1. Nombre del
+                            Docente:</label>
+                        <input type="text" id="docente" placeholder="Nombre del Docente" class="input-field"
+                            value="Juan Manuel Caicedo Oliva">
                     </div>
                     <div>
-                        <label for="director" class="block mb-2 text-sm font-medium text-cyan-200">2. Nombre del Director/a:</label>
+                        <label for="director" class="block mb-2 text-sm font-medium text-cyan-200">2. Nombre del
+                            Director/a:</label>
                         <input type="text" id="director" placeholder="Nombre del Director/a" class="input-field">
                     </div>
                     <div>
-                        <label for="ie" class="block mb-2 text-sm font-medium text-cyan-200">3. Institución Educativa:</label>
-                        <input type="text" id="ie" placeholder="Institución Educativa" class="input-field" value="Ángel Custodio Ramirez">
+                        <label for="ie" class="block mb-2 text-sm font-medium text-cyan-200">3. Institución
+                            Educativa:</label>
+                        <input type="text" id="ie" placeholder="Institución Educativa" class="input-field"
+                            value="Ángel Custodio Ramirez">
                     </div>
                     <div>
-                        <label for="nivel" class="block mb-2 text-sm font-medium text-cyan-200">4. Nivel Educativo:</label>
+                        <label for="nivel" class="block mb-2 text-sm font-medium text-cyan-200">4. Nivel
+                            Educativo:</label>
                         <select id="nivel" class="input-field"></select>
                     </div>
                     <div>
                         <label for="grado" class="block mb-2 text-sm font-medium text-cyan-200">5. Grado:</label>
-                        <select id="grado" class="input-field" disabled><option>Seleccione un nivel</option></select>
+                        <select id="grado" class="input-field" disabled>
+                            <option>Seleccione un nivel</option>
+                        </select>
                     </div>
                     <div>
-                        <label for="area" class="block mb-2 text-sm font-medium text-cyan-200">6. Área Curricular:</label>
-                        <select id="area" class="input-field" disabled><option>Seleccione nivel y grado</option></select>
+                        <label for="area" class="block mb-2 text-sm font-medium text-cyan-200">6. Área
+                            Curricular:</label>
+                        <select id="area" class="input-field" disabled>
+                            <option>Seleccione nivel y grado</option>
+                        </select>
                     </div>
                     <div>
-                        <label for="duracion" class="block mb-2 text-sm font-medium text-cyan-200">7. Duración (Semanas):</label>
+                        <label for="duracion" class="block mb-2 text-sm font-medium text-cyan-200">7. Duración
+                            (Semanas):</label>
                         <select id="duracion" class="input-field">
                             <option value="1">1 semana</option>
                             <option value="2">2 semanas</option>
@@ -111,11 +129,13 @@
                         </select>
                     </div>
                     <div>
-                        <label for="fecha" class="block mb-2 text-sm font-medium text-cyan-200">8. Fecha de Inicio:</label>
+                        <label for="fecha" class="block mb-2 text-sm font-medium text-cyan-200">8. Fecha de
+                            Inicio:</label>
                         <input type="date" id="fecha" class="input-field">
                     </div>
                     <div class="md:col-span-2 bg-gray-900/50 p-4 rounded-lg mt-4">
-                        <label class="block mb-2 text-sm font-medium text-cyan-200">9. Competencias a desarrollar:</label>
+                        <label class="block mb-2 text-sm font-medium text-cyan-200">9. Competencias a
+                            desarrollar:</label>
                         <div id="competencias-checkboxes" class="text-gray-300">
                             <p>Seleccione un área para ver las competencias.</p>
                         </div>
@@ -127,32 +147,42 @@
             </div>
 
             <div id="step-2" class="step hidden">
-                <h2 class="text-2xl font-bold font-rajdhani text-cyan-300 border-b-2 border-cyan-500/30 pb-2 mb-6">Paso 2: Contenido y Contexto</h2>
+                <h2 class="text-2xl font-bold font-rajdhani text-cyan-300 border-b-2 border-cyan-500/30 pb-2 mb-6">Paso
+                    2: Contenido y Contexto</h2>
                 <form id="form-step-2" class="grid grid-cols-1 gap-4">
-                    
+
                     <div>
-                        <label for="titulo-unidad" class="block mb-2 text-sm font-medium text-cyan-200">1. Título de la Unidad:</label>
+                        <label for="titulo-unidad" class="block mb-2 text-sm font-medium text-cyan-200">1. Título de la
+                            Unidad:</label>
                         <input type="text" id="titulo-unidad" placeholder="Título de la Unidad" class="input-field">
                     </div>
                     <div>
-                        <label for="temas-clave" class="block mb-2 text-sm font-medium text-cyan-200">2. Temas Clave:</label>
-                        <textarea id="temas-clave" placeholder="Escriba los temas clave de la unidad" class="input-field h-24"></textarea>
+                        <label for="temas-clave" class="block mb-2 text-sm font-medium text-cyan-200">2. Temas
+                            Clave:</label>
+                        <textarea id="temas-clave" placeholder="Escriba los temas clave de la unidad"
+                            class="input-field h-24"></textarea>
                     </div>
                     <div>
-                        <label for="contexto" class="block mb-2 text-sm font-medium text-cyan-200">3. Contexto de los Estudiantes:</label>
-                        <textarea id="contexto" placeholder="Contexto de los estudiantes (Opcional pero recomendado) Ejm: Los estudiantes viven en una zona rural de la cuidad de Tarapoto llamada: Miraflores" class="input-field h-32"></textarea>
+                        <label for="contexto" class="block mb-2 text-sm font-medium text-cyan-200">3. Contexto de los
+                            Estudiantes:</label>
+                        <textarea id="contexto"
+                            placeholder="Contexto de los estudiantes (Opcional pero recomendado) Ejm: Los estudiantes viven en una zona rural de la cuidad de Tarapoto llamada: Miraflores"
+                            class="input-field h-32"></textarea>
                     </div>
-                    
+
                     <div>
-                        <label for="situacion-source" class="block mb-2 text-sm font-medium text-cyan-200">4. Situación Significativa:</label>
+                        <label for="situacion-source" class="block mb-2 text-sm font-medium text-cyan-200">4. Situación
+                            Significativa:</label>
                         <select id="situacion-source" class="input-field">
                             <option value="ia" selected>Dejar que la IA genere la Situación Significativa</option>
                             <option value="manual">Escribir la Situación Significativa</option>
                         </select>
                     </div>
                     <div id="situacion-manual-container" class="hidden">
-                         <label for="situacion-manual" class="block mb-2 text-sm font-medium text-cyan-200">5. Escriba su Situación Significativa:</label>
-                        <textarea id="situacion-manual" placeholder="Escriba aquí su Situación Significativa" class="input-field h-32"></textarea>
+                        <label for="situacion-manual" class="block mb-2 text-sm font-medium text-cyan-200">5. Escriba su
+                            Situación Significativa:</label>
+                        <textarea id="situacion-manual" placeholder="Escriba aquí su Situación Significativa"
+                            class="input-field h-32"></textarea>
                     </div>
 
                     <div class="flex justify-between mt-4">
@@ -163,19 +193,22 @@
             </div>
 
             <div id="step-3" class="step hidden">
-                <h2 class="text-2xl font-bold font-rajdhani text-cyan-300 border-b-2 border-cyan-500/30 pb-2 mb-6">Paso 3: Confirmar y Generar</h2>
+                <h2 class="text-2xl font-bold font-rajdhani text-cyan-300 border-b-2 border-cyan-500/30 pb-2 mb-6">Paso
+                    3: Confirmar y Generar</h2>
                 <div id="resumen-datos" class="bg-gray-900/50 p-4 rounded-lg mb-6">
-                    </div>
+                </div>
                 <div class="flex justify-between">
                     <button type="button" id="btn-prev-3" class="btn btn-secondary">Anterior</button>
-                    <button type="button" id="btn-generate" class="btn btn-primary btn-generate-pulse">✨ Generar Unidad de Aprendizaje</button>
+                    <button type="button" id="btn-generate" class="btn btn-primary btn-generate-pulse">✨ Generar Unidad
+                        de Aprendizaje</button>
                 </div>
             </div>
 
         </main>
 
         <section id="output-container" class="mt-10 hidden">
-            <div id="unidad-generada" class="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl shadow-cyan-500/10 border border-gray-700">
+            <div id="unidad-generada"
+                class="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-2xl shadow-cyan-500/10 border border-gray-700">
             </div>
             <div id="final-buttons" class="text-center mt-8 hidden">
                 <button id="btn-download" class="btn btn-primary mr-4">Descargar en Word</button>
@@ -184,10 +217,11 @@
         </section>
 
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" defer></script>
     <script src="js/data.js" defer></script>
     <script src="js/main.js"></script>
 
 </body>
+
 </html>
