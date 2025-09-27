@@ -1,12 +1,6 @@
 // ===================================================================================
-//  FUNCIÓN SERVERLESS (BACKEND): generate-block.js - VERSIÓN CON PROMPT PROFESIONAL
-// ===================================================================================
-// Esta función se ejecuta en el servidor de Netlify. Es el puente seguro entre
-// nuestra aplicación y la API de Google Gemini.
-// 1. Recibe los datos de la unidad desde el frontend.
-// 2. Construye un prompt específico y detallado para la sección solicitada.
-// 3. Llama a la API de Gemini con la API Key (de forma segura).
-// 4. Devuelve el contenido generado en formato Markdown al frontend.
+//  FUNCIÓN SERVERLESS (BACKEND): generate-block.js
+//  VERSIÓN MODIFICADA CON LÓGICA DE 2 PASOS PARA 'propositos-aprendizaje'
 // ===================================================================================
 
 require('dotenv').config();
@@ -14,10 +8,71 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// === FUNCIÓN PARA CONSTRUIR EL PROMPT ===
+// ===================================================================================
+//  SECCIÓN DE PROMPTS
+// ===================================================================================
+
+/**
+ * (NUEVO) Prompt para el PASO 1 de 'propositos-aprendizaje'
+ * Obtiene solo la estructura de competencias y capacidades.
+ */
+const buildPromptPaso1 = (unitData) => {
+    const { nivel, grado, area, competencias } = unitData;
+
+    return `
+Actúa como un experto pedagogo peruano (CNEB).
+**Contexto:**
+- Nivel: ${nivel}, Grado: ${grado}
+- Área Curricular: ${area}
+- Competencias Seleccionadas: ${competencias.join(', ')}
+
+**Instrucción:**
+Devuelve ÚNICAMENTE un objeto JSON. No incluyas texto antes o después.
+El JSON debe ser un array donde cada objeto contiene la competencia y una lista de sus capacidades.
+Formato de ejemplo:
+[
+  {
+    "competencia": "Construye su identidad",
+    "capacidades": ["Se valora a sí mismo", "Autorregula sus emociones"]
+  }
+]
+`;
+};
+
+/**
+ * (NUEVO) Prompt para el PASO 2 de 'propositos-aprendizaje'
+ * Recibe la estructura del Paso 1 y genera la tabla completa.
+ */
+const buildPromptPaso2 = (unitData, estructuraJson) => {
+    const { nivel, grado, area, tituloUnidad, temasClave } = unitData;
+
+    return `
+Actúa como un experto pedagogo peruano (CNEB).
+**Contexto de la Unidad:**
+- Título: ${tituloUnidad}
+- Nivel: ${nivel}, Grado: ${grado}
+- Área Curricular: ${area}
+- Temas Clave: ${temasClave}
+
+**Estructura de Aprendizaje (Competencias y Capacidades ya definidas):**
+${JSON.stringify(estructuraJson, null, 2)}
+
+**Instrucción Específica:**
+Basado en el contexto y la estructura de aprendizaje proporcionada, genera una tabla en Markdown con CUATRO columnas: 'Competencias', 'Capacidades', 'Desempeños Precisados' y 'Evidencias de Aprendizaje'.
+- Para las columnas 'Competencias' y 'Capacidades', usa la información de la estructura que te di.
+- En la columna 'Desempeños Precisados', redacta desempeños clave, contextualizados y muy concisos (máximo 2 por capacidad).
+- En la columna 'Evidencias de Aprendizaje', describe la evidencia principal (una por competencia).
+- Sé extremadamente breve y directo en todos los textos.
+`;
+};
+
+/**
+ * (MODIFICADO) Prompt principal para TODOS LOS DEMÁS bloques.
+ * Se ha eliminado el 'case' de 'propositos-aprendizaje'.
+ */
 const buildPrompt = (blockId, unitData) => {
-    const { 
-        nivel, grado, area, duracion, competencias, tituloUnidad, temasClave, contexto 
+    const {
+        nivel, grado, area, duracion, competencias, tituloUnidad, temasClave, contexto
     } = unitData;
 
     let basePrompt = `Actúa como un experto pedagogo peruano, especialista en el Currículo Nacional de Educación Básica (CNEB). Tu tarea es generar una sección específica para una unidad de aprendizaje. Responde únicamente con el contenido solicitado para la sección, en formato Markdown, usando títulos, listas y tablas si es necesario. Sé conciso y directo. No incluyas el título de la sección en tu respuesta, solo el contenido.`;
@@ -47,15 +102,13 @@ const buildPrompt = (blockId, unitData) => {
         case 'proposito':
             instructionPrompt = `Redacta el **Propósito de la Unidad** de manera clara y concisa.`;
             break;
-        case 'propositos-aprendizaje':
-            // *** SOLUCIÓN: Se pide una lista Markdown estándar (con guiones) en lugar de emojis. ***
-            instructionPrompt = `Genera los **Propósitos de Aprendizaje**. Crea una tabla en Markdown con CUATRO columnas: 'Competencias', 'Capacidades', 'Desempeños Precisados' y 'Evidencias de Aprendizaje'.
-- En la columna 'Competencias', pon solo el nombre de la competencia.
-- En la columna 'Capacidades', crea una lista Markdown usando guiones ('- '). Cada ítem de la lista debe ser una capacidad de la competencia.
-- En la columna 'Desempeños Precisados', crea una lista Markdown usando guiones ('- '). Cada ítem debe ser un desempeño clave y contextualizado.
-- En la columna 'Evidencias de Aprendizaje', describe la evidencia principal.
-Sé muy conciso en los textos.`;
-            break;
+        
+        // --- ESTE BLOQUE SE HA ELIMINADO ---
+        // case 'propositos-aprendizaje':
+        //     ...
+        //     break;
+        // ----------------------------------
+
         case 'competencias-transversales':
             instructionPrompt = `Genera el contenido para **Competencias y Enfoques Transversales**. Primero, crea un subtítulo 'Competencias Transversales' y en una tabla, justifica cómo se promoverán. Segundo, crea un subtítulo 'Enfoques Transversales' y en una tabla, describe qué enfoques se trabajarán y qué valores demostrarán los estudiantes.`;
             break;
@@ -76,7 +129,9 @@ Sé muy conciso en los textos.`;
 };
 
 
-// === HANDLER DE LA FUNCIÓN SERVERLESS ===
+// ===================================================================================
+//  HANDLER DE LA FUNCIÓN SERVERLESS (MODIFICADO)
+// ===================================================================================
 exports.handler = async (event) => {
     if (event.httpMethod !== 'POST') {
         return { statusCode: 405, body: 'Method Not Allowed' };
@@ -89,18 +144,47 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ message: 'Faltan datos en la solicitud.' }) };
         }
 
-        const prompt = buildPrompt(blockId, unitData);
-
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
+        let finalContent = '';
 
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
+        // --- INICIO DE LA LÓGICA MODIFICADA ---
+        if (blockId === 'propositos-aprendizaje') {
+            // Es el bloque problemático, usamos la lógica de 2 pasos
 
+            console.log("Iniciando Paso 1: Obtener Estructura JSON");
+            // === PASO 1: Obtener estructura ===
+            const promptPaso1 = buildPromptPaso1(unitData);
+            const resultPaso1 = await model.generateContent(promptPaso1);
+            const textPaso1 = resultPaso1.response.text();
+
+            // Extraer el JSON de la respuesta (añadimos robustez)
+            const jsonMatch = textPaso1.match(/\[[\s\S]*\]/);
+            if (!jsonMatch) {
+                console.error("Error Paso 1: La IA no devolvió un JSON válido.", textPaso1);
+                throw new Error("Paso 1 falló: No se recibió un JSON de competencias.");
+            }
+            const estructuraJson = JSON.parse(jsonMatch[0]);
+
+            console.log("Iniciando Paso 2: Generar Tabla Markdown");
+            // === PASO 2: Generar la tabla usando la estructura ===
+            const promptPaso2 = buildPromptPaso2(unitData, estructuraJson);
+            const resultPaso2 = await model.generateContent(promptPaso2);
+            finalContent = resultPaso2.response.text();
+
+        } else {
+            // Para todos los demás bloques, usa la lógica original
+            console.log(`Generando bloque normal: ${blockId}`);
+            const prompt = buildPrompt(blockId, unitData);
+            const result = await model.generateContent(prompt);
+            finalContent = result.response.text();
+        }
+        // --- FIN DE LA LÓGICA MODIFICADA ---
+
+        // Respuesta final unificada
         return {
             statusCode: 200,
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: text }),
+            body: JSON.stringify({ content: finalContent }),
         };
 
     } catch (error) {
