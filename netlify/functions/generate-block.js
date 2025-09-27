@@ -1,6 +1,6 @@
 // ===================================================================================
 //  FUNCIÓN SERVERLESS (BACKEND): generate-block.js
-//  VERSIÓN MODIFICADA CON LÓGICA DE 2 PASOS PARA 'propositos-aprendizaje'
+//  VERSIÓN DEFINITIVA: Simplifica el Paso 1 a una lista de texto y la procesa en código.
 // ===================================================================================
 
 require('dotenv').config();
@@ -9,12 +9,38 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // ===================================================================================
-//  SECCIÓN DE PROMPTS
+//  SECCIÓN DE PROMPTS Y HELPERS
 // ===================================================================================
 
 /**
- * (NUEVO) Prompt para el PASO 1 de 'propositos-aprendizaje'
- * Obtiene solo la estructura de competencias y capacidades.
+ * (NUEVO) Helper para convertir la lista de texto a JSON.
+ * Este trabajo ahora lo hace nuestro código, no la IA.
+ */
+const parseListToJSON = (text) => {
+    const lines = text.split('\n').filter(line => line.trim() !== '');
+    const result = [];
+    let currentCompetencia = null;
+
+    lines.forEach(line => {
+        const trimmedLine = line.trim();
+        // Detecta una línea de competencia (asume que no empieza con guión o espacio)
+        if (!trimmedLine.startsWith('-') && !trimmedLine.startsWith('*')) {
+            currentCompetencia = { competencia: trimmedLine, capacidades: [] };
+            result.push(currentCompetencia);
+        }
+        // Detecta una línea de capacidad (asume que empieza con guión o asterisco)
+        else if ((trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) && currentCompetencia) {
+            // Limpia el guión y el espacio inicial
+            const capacidad = trimmedLine.substring(1).trim();
+            currentCompetencia.capacidades.push(capacidad);
+        }
+    });
+    return result;
+};
+
+
+/**
+ * (MODIFICADO) Prompt para el PASO 1. Ahora pide una lista de texto simple.
  */
 const buildPromptPaso1 = (unitData) => {
     const { nivel, grado, area, competencias } = unitData;
@@ -27,25 +53,27 @@ Actúa como un experto pedagogo peruano (CNEB).
 - Competencias Seleccionadas: ${competencias.join(', ')}
 
 **Instrucción:**
-Devuelve ÚNICAMENTE un objeto JSON. No incluyas texto antes o después.
-El JSON debe ser un array donde cada objeto contiene la competencia y una lista de sus capacidades.
-Formato de ejemplo:
-[
-  {
-    "competencia": "Construye su identidad",
-    "capacidades": ["Se valora a sí mismo", "Autorregula sus emociones"]
-  }
-]
+Devuelve ÚNICAMENTE una lista de texto simple. No uses Markdown.
+Cada competencia debe estar en su propia línea, y cada capacidad debajo de ella, indentada con un guion.
+NO USES JSON. NO USES COMILLAS. NO AÑADAS TEXTO EXTRA.
+
+**Formato Exacto de Ejemplo:**
+Construye su identidad
+- Se valora a sí mismo
+- Autorregula sus emociones
+Convive y participa democráticamente en la búsqueda del bien común
+- Interactúa con todas las personas
+- Construye normas y asume acuerdos y leyes
 `;
 };
 
+
 /**
- * (NUEVO) Prompt para el PASO 2 de 'propositos-aprendizaje'
- * Recibe la estructura del Paso 1 y genera la tabla completa.
+ * (SIN CAMBIOS) Prompt para el PASO 2. Sigue esperando un JSON.
  */
 const buildPromptPaso2 = (unitData, estructuraJson) => {
     const { nivel, grado, area, tituloUnidad, temasClave } = unitData;
-
+    // ... (el resto de esta función es idéntica a la versión anterior)
     return `
 Actúa como un experto pedagogo peruano (CNEB).
 **Contexto de la Unidad:**
@@ -67,10 +95,10 @@ Basado en el contexto y la estructura de aprendizaje proporcionada, genera una t
 };
 
 /**
- * (MODIFICADO) Prompt principal para TODOS LOS DEMÁS bloques.
- * Se ha eliminado el 'case' de 'propositos-aprendizaje'.
+ * (SIN CAMBIOS) Prompt principal para TODOS LOS DEMÁS bloques.
  */
 const buildPrompt = (blockId, unitData) => {
+    // ... (el resto de esta función es idéntica a la versión anterior)
     const {
         nivel, grado, area, duracion, competencias, tituloUnidad, temasClave, contexto
     } = unitData;
@@ -102,13 +130,6 @@ const buildPrompt = (blockId, unitData) => {
         case 'proposito':
             instructionPrompt = `Redacta el **Propósito de la Unidad** de manera clara y concisa.`;
             break;
-        
-        // --- ESTE BLOQUE SE HA ELIMINADO ---
-        // case 'propositos-aprendizaje':
-        //     ...
-        //     break;
-        // ----------------------------------
-
         case 'competencias-transversales':
             instructionPrompt = `Genera el contenido para **Competencias y Enfoques Transversales**. Primero, crea un subtítulo 'Competencias Transversales' y en una tabla, justifica cómo se promoverán. Segundo, crea un subtítulo 'Enfoques Transversales' y en una tabla, describe qué enfoques se trabajarán y qué valores demostrarán los estudiantes.`;
             break;
@@ -144,35 +165,30 @@ exports.handler = async (event) => {
             return { statusCode: 400, body: JSON.stringify({ message: 'Faltan datos en la solicitud.' }) };
         }
 
+        // --- CAMBIO DE MODELO a uno más robusto ---
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
         let finalContent = '';
 
         // --- INICIO DE LA LÓGICA MODIFICADA ---
         if (blockId === 'propositos-aprendizaje') {
-            // Es el bloque problemático, usamos la lógica de 2 pasos
-
-            console.log("Iniciando Paso 1: Obtener Estructura JSON");
-            // === PASO 1: Obtener estructura ===
+            console.log("Iniciando Paso 1 (Simplificado): Obtener Lista de Texto");
             const promptPaso1 = buildPromptPaso1(unitData);
             const resultPaso1 = await model.generateContent(promptPaso1);
             const textPaso1 = resultPaso1.response.text();
 
-            // Extraer el JSON de la respuesta (añadimos robustez)
-            const jsonMatch = textPaso1.match(/\[[\s\S]*\]/);
-            if (!jsonMatch) {
-                console.error("Error Paso 1: La IA no devolvió un JSON válido.", textPaso1);
-                throw new Error("Paso 1 falló: No se recibió un JSON de competencias.");
+            // --- NUEVO: Convertir la lista de texto a JSON usando nuestro código ---
+            const estructuraJson = parseListToJSON(textPaso1);
+            if (!estructuraJson || estructuraJson.length === 0) {
+                 console.error("Error al parsear la lista a JSON. Respuesta de la IA:", textPaso1);
+                 throw new Error("Paso 1 falló: No se pudo procesar la lista de competencias.");
             }
-            const estructuraJson = JSON.parse(jsonMatch[0]);
 
             console.log("Iniciando Paso 2: Generar Tabla Markdown");
-            // === PASO 2: Generar la tabla usando la estructura ===
             const promptPaso2 = buildPromptPaso2(unitData, estructuraJson);
             const resultPaso2 = await model.generateContent(promptPaso2);
             finalContent = resultPaso2.response.text();
 
         } else {
-            // Para todos los demás bloques, usa la lógica original
             console.log(`Generando bloque normal: ${blockId}`);
             const prompt = buildPrompt(blockId, unitData);
             const result = await model.generateContent(prompt);
@@ -180,7 +196,6 @@ exports.handler = async (event) => {
         }
         // --- FIN DE LA LÓGICA MODIFICADA ---
 
-        // Respuesta final unificada
         return {
             statusCode: 200,
             headers: { 'Content-Type': 'application/json' },
