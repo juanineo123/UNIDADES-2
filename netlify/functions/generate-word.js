@@ -67,10 +67,43 @@ const createBulletedParagraphs = (text = "", alignment = AlignmentType.JUSTIFIED
 };
 
 exports.handler = async (event) => {
-    if (event.httpMethod !== 'POST') { return { statusCode: 405, body: 'Method Not Allowed' }; }
+    if (event.httpMethod !== 'POST') { 
+        return { statusCode: 405, body: 'Method Not Allowed' }; 
+    }
 
     try {
-        const { wizardData, generatedMarkdownContent } = JSON.parse(event.body);
+        // VALIDACIÓN AGREGADA PARA DEBUGGING
+        console.log("Event body:", event.body);
+        
+        if (!event.body) {
+            console.error("No se recibió body en la petición");
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ error: 'No se recibieron datos en la petición' }) 
+            };
+        }
+        
+        const requestData = JSON.parse(event.body);
+        console.log("Parsed data:", requestData);
+        
+        const { wizardData, generatedMarkdownContent } = requestData;
+        
+        if (!wizardData) {
+            console.error("wizardData faltante:", wizardData);
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ error: 'Faltan wizardData en la petición' }) 
+            };
+        }
+        
+        if (!generatedMarkdownContent) {
+            console.error("generatedMarkdownContent faltante:", generatedMarkdownContent);
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ error: 'Faltan generatedMarkdownContent en la petición' }) 
+            };
+        }
+
         let docChildren = [];
 
         docChildren.push(new Paragraph({ alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: "AÑO DE LA RECUPERACIÓN Y CONSOLIDACIÓN DE LA ECONOMÍA PERUANA", bold: true, size: 30 })] }));
@@ -178,7 +211,7 @@ exports.handler = async (event) => {
         console.error("Error en la función generate-word:", error);
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Hubo un error al crear el documento en el servidor.' })
+            body: JSON.stringify({ error: 'Hubo un error al crear el documento en el servidor.', details: error.message })
         };
     }
 };

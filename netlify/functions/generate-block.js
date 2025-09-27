@@ -48,13 +48,8 @@ const buildPrompt = (blockId, unitData) => {
             instructionPrompt = `Redacta el **Propósito de la Unidad** de manera clara y concisa.`;
             break;
         case 'propositos-aprendizaje':
-            // *** SOLUCIÓN: Se pide una lista Markdown estándar (con guiones) en lugar de emojis. ***
-            instructionPrompt = `Genera los **Propósitos de Aprendizaje**. Crea una tabla en Markdown con CUATRO columnas: 'Competencias', 'Capacidades', 'Desempeños Precisados' y 'Evidencias de Aprendizaje'.
-- En la columna 'Competencias', pon solo el nombre de la competencia.
-- En la columna 'Capacidades', crea una lista Markdown usando guiones ('- '). Cada ítem de la lista debe ser una capacidad de la competencia.
-- En la columna 'Desempeños Precisados', crea una lista Markdown usando guiones ('- '). Cada ítem debe ser un desempeño clave y contextualizado.
-- En la columna 'Evidencias de Aprendizaje', describe la evidencia principal.
-Sé muy conciso en los textos.`;
+    instructionPrompt = `Genera una tabla Markdown simple para los Propósitos de Aprendizaje con estas columnas: Competencias | Capacidades | Desempeños | Evidencias. Usa listas con guiones en las celdas cuando sea necesario.`;
+    break;
             break;
         case 'competencias-transversales':
             instructionPrompt = `Genera el contenido para **Competencias y Enfoques Transversales**. Primero, crea un subtítulo 'Competencias Transversales' y en una tabla, justifica cómo se promoverán. Segundo, crea un subtítulo 'Enfoques Transversales' y en una tabla, describe qué enfoques se trabajarán y qué valores demostrarán los estudiantes.`;
