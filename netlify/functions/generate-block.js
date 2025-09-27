@@ -1,151 +1,212 @@
-// ===================================================================================
-//  FUNCIÓN SERVERLESS (BACKEND): generate-block.js
-//  VERSIÓN HIPER-OPTIMIZADA PARA EL LÍMITE DE 10 SEGUNDOS DE NETLIFY FREE TIER
-// ===================================================================================
+const {
+    Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell,
+    WidthType, AlignmentType, VerticalAlign, ShadingType, BorderStyle
+} = require("docx");
 
-require('dotenv').config();
-const { GoogleGenerativeAI } = require('@google/generative-ai');
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-// --- (Las funciones parseListToJSON y buildPromptPaso1 no necesitan cambios) ---
-const parseListToJSON = (text) => {
-    const lines = text.split('\n').filter(line => line.trim() !== '');
-    const result = [];
-    let currentCompetencia = null;
-    lines.forEach(line => {
-        const trimmedLine = line.trim();
-        if (!trimmedLine.startsWith('-') && !trimmedLine.startsWith('*')) {
-            currentCompetencia = { competencia: trimmedLine, capacidades: [] };
-            result.push(currentCompetencia);
-        } else if ((trimmedLine.startsWith('-') || trimmedLine.startsWith('*')) && currentCompetencia) {
-            const capacidad = trimmedLine.substring(1).trim();
-            currentCompetencia.capacidades.push(capacidad);
-        }
+// --- Constantes y Funciones Auxiliares ---
+const TABLE_WIDTH_DXA = 9360;
+const createSectionTitle = (text) => new Paragraph({ children: [new TextRun({ text, bold: true, size: 24, font: "Calibri" })], heading: HeadingLevel.HEADING_2, spacing: { before: 400, after: 200 } });
+const parseMarkdownToTextRuns = (text = "") => {
+    if (typeof text !== 'string') text = '';
+    const runs = []; const parts = text.split(/(\*\*.*?\*\*|\*.*?\*)/g);
+    parts.forEach(part => {
+        if (part.startsWith('**') && part.endsWith('**')) runs.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+        else if (part.startsWith('*') && part.endsWith('*')) runs.push(new TextRun({ text: part.slice(1, -1), italic: true }));
+        else if (part) runs.push(new TextRun(part));
     });
-    return result;
+    return runs;
 };
-
-const buildPromptPaso1 = (unitData) => {
-    const { nivel, grado, area, competencias } = unitData;
-    return `
-Actúa como un experto pedagogo peruano (CNEB).
-**Contexto:**
-- Nivel: ${nivel}, Grado: ${grado}, Área: ${area}, Competencias: ${competencias.join(', ')}
-**Instrucción:**
-Devuelve ÚNICAMENTE una lista de texto simple. NO USES JSON. NO USES COMILLAS. NO AÑADAS TEXTO EXTRA.
-**Formato Exacto de Ejemplo:**
-Construye su identidad
-- Se valora a sí mismo
-- Autorregula sus emociones
-Convive y participa democráticamente
-- Interactúa con todas las personas
-- Construye normas
-`;
+const createFormattedParagraphs = (text = "") => {
+    if (!text || typeof text !== 'string' || text.trim() === "") return [new Paragraph({ text: "" })];
+    const paragraphOptions = { alignment: AlignmentType.JUSTIFIED, spacing: { after: 100 } };
+    return text.split('\n').map(line => {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('### ')) {
+             return new Paragraph({ children: [new TextRun({ text: trimmedLine.substring(4), bold: true, size: 22 })], spacing: { before: 200, after: 100 } });
+        }
+        if (trimmedLine.startsWith('* ') || trimmedLine.startsWith('• ') || trimmedLine.startsWith('- ')) {
+            return new Paragraph({ ...paragraphOptions, children: parseMarkdownToTextRuns(trimmedLine.substring(2)), bullet: { level: 0 } });
+        }
+        return new Paragraph({ ...paragraphOptions, children: parseMarkdownToTextRuns(trimmedLine) });
+    });
 };
-
-
-/**
- * (OPTIMIZACIÓN EXTREMA) Prompt para el PASO 2. Obliga a la IA a ser brutalmente breve.
- */
-const buildPromptPaso2 = (unitData, estructuraJson) => {
-    const { nivel, grado, area, tituloUnidad, temasClave } = unitData;
-    return `
-Actúa como un experto pedagogo peruano (CNEB). Tu única tarea es completar la tabla Markdown que te pido.
-**Contexto:**
-- Título: ${tituloUnidad}, Nivel: ${nivel}, Grado: ${grado}, Área: ${area}, Temas: ${temasClave}
-**Estructura Base:**
-${JSON.stringify(estructuraJson, null, 2)}
-
-**Instrucción Específica e Innegociable:**
-Genera una tabla Markdown con las columnas 'Competencias', 'Capacidades', 'Desempeños Precisados' y 'Evidencias de Aprendizaje'.
-- **Sé BRUTALMENTE BREVE.** Tu prioridad es la velocidad.
-- Para 'Desempeños Precisados', escribe **UN SOLO desempeño, el más importante, por cada capacidad. Debe ser una única frase corta.**
-- Para 'Evidencias de Aprendizaje', escribe **solo el nombre de la evidencia en 2 o 3 palabras** (Ej: 'Mapa conceptual', 'Exposición oral', 'Ficha de trabajo').
-`;
+const createTableFromMarkdown = (markdownText = "") => {
+    if (!markdownText || typeof markdownText !== 'string' || !markdownText.includes('|')) return createFormattedParagraphs(markdownText);
+    const lines = markdownText.trim().split('\n').filter(line => line.includes('|'));
+    if (lines.length < 2) return createFormattedParagraphs(markdownText);
+    const getCells = (line) => line.split('|').slice(1, -1).map(cell => cell.trim());
+    const headerCells = getCells(lines[0]);
+    const tableRowsData = lines.slice(2).map(line => getCells(line));
+    const cellMargins = { top: 100, bottom: 100, left: 100, right: 100 };
+    const columnCount = headerCells.length > 0 ? headerCells.length : 1;
+    const columnDxaWidth = Math.floor(TABLE_WIDTH_DXA / columnCount);
+    const calculatedColumnWidths = Array(columnCount).fill(columnDxaWidth);
+    return new Table({
+        width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
+        columnWidths: calculatedColumnWidths,
+        rows: [
+            new TableRow({ tableHeader: true, children: headerCells.map(headerText => new TableCell({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: headerText, bold: true, allCaps: true, size: 22 })] })], verticalAlign: VerticalAlign.CENTER, margins: cellMargins, shading: { fill: "E8EAF6", type: ShadingType.CLEAR } })) }),
+            ...tableRowsData.map(row => new TableRow({ children: row.map(cellText => new TableCell({ children: createFormattedParagraphs(cellText), verticalAlign: VerticalAlign.CENTER, margins: cellMargins })) })),
+        ],
+    });
 };
-
-
-/**
- * (MODIFICADO) Prompt principal con optimización para 'competencias-transversales'.
- */
-const buildPrompt = (blockId, unitData) => {
-    const { nivel, grado, area, duracion, competencias, tituloUnidad, temasClave, contexto } = unitData;
-    let basePrompt = `Actúa como un experto pedagogo peruano (CNEB). Tu tarea es generar una sección para una unidad de aprendizaje. Responde únicamente con el contenido solicitado, en formato Markdown. Sé extremadamente conciso y directo para responder en menos de 5 segundos.`;
-    let contextPrompt = `**Contexto:** Título: ${tituloUnidad}, Nivel: ${nivel}, Grado: ${grado}, Área: ${area}, Duración: ${duracion} semanas, Temas: ${temasClave}`;
-
-    let instructionPrompt = '';
-    switch (blockId) {
-        // ... (casos 'justificacion', 'situacion', 'producto', 'proposito' sin cambios)
-        case 'justificacion': instructionPrompt = `Genera la **Justificación** de esta unidad. Explica en 2 o 3 frases por qué es importante.`; break;
-        case 'situacion': instructionPrompt = `Crea una **Situación Significativa** que sea retadora y realista. Máximo 3 frases.`; break;
-        case 'producto': instructionPrompt = `Describe el **Producto** final de la unidad en una sola frase.`; break;
-        case 'proposito': instructionPrompt = `Redacta el **Propósito de la Unidad** en una sola frase clara.`; break;
-
-        /**
-         * --- OPTIMIZACIÓN: Se elimina la tabla y se piden listas simples para velocidad ---
-         * Este era el otro punto que daba error. Ahora es mucho más rápido.
-         */
-        case 'competencias-transversales':
-            instructionPrompt = `Genera el contenido para **Competencias y Enfoques Transversales**. NO USES TABLAS. Responde con dos listas de viñetas simples y muy cortas.
-La primera, bajo el subtítulo \`### Competencias Transversales\`, donde solo mencionas la competencia y una acción clave (Ej: \`* Gestiona su aprendizaje...: Define metas de aprendizaje.\`).
-La segunda, bajo el subtítulo \`### Enfoques Transversales\`, donde solo mencionas el enfoque y un valor clave (Ej: \`* Enfoque Inclusivo: Respeto por las diferencias.\`).
-Sé extremadamente conciso.`;
-            break;
-
-        // ... (resto de los casos sin cambios significativos)
-        case 'secuencia': instructionPrompt = `Genera la **Secuencia Didáctica** en una tabla Markdown. Debe tener ${duracion} fila(s). Sé muy breve en las descripciones.`; break;
-        case 'evaluacion': instructionPrompt = `Detalla la **Evaluación**. Crea una tabla Markdown con dos columnas: 'Evidencias de Aprendizaje' e 'Instrumentos de Evaluación'. Solo nombra los elementos.`; break;
-        case 'recursos': instructionPrompt = `Lista los **Recursos y Materiales** necesarios. Solo los nombres, sin descripciones.`; break;
-        default: instructionPrompt = `Genera contenido relevante para la sección solicitada.`;
-    }
-
-    return `${basePrompt}\n\n${contextPrompt}\n\n**Instrucción Específica:**\n${instructionPrompt}`;
-};
-
 
 // ===================================================================================
-//  HANDLER DE LA FUNCIÓN SERVERLESS (MODIFICADO)
+//  HANDLER PRINCIPAL (VERSIÓN CORREGIDA CON MEJOR MANEJO DE ERRORES)
 // ===================================================================================
 exports.handler = async (event) => {
-    if (event.httpMethod !== 'POST') { return { statusCode: 405, body: 'Method Not Allowed' }; }
-
+    console.log('=== INICIO DE FUNCIÓN GENERATE-WORD ===');
+    console.log('Method:', event.httpMethod);
+    console.log('Headers:', JSON.stringify(event.headers, null, 2));
+    
+    if (event.httpMethod !== 'POST') {
+        return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+    }
+    
     try {
-        const { blockId, unitData } = JSON.parse(event.body);
-        if (!blockId || !unitData) { return { statusCode: 400, body: JSON.stringify({ message: 'Faltan datos.' }) }; }
-
-        // --- CAMBIO DE MODELO: Volvemos a Flash para MÁXIMA VELOCIDAD ---
-        // LÍNEA NUEVA Y CORRECTA:
-        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-lite" });
-        let finalContent = '';
-
-        if (blockId === 'propositos-aprendizaje') {
-            const promptPaso1 = buildPromptPaso1(unitData);
-            const resultPaso1 = await model.generateContent(promptPaso1);
-            const textPaso1 = resultPaso1.response.text();
-
-            const estructuraJson = parseListToJSON(textPaso1);
-            if (!estructuraJson || estructuraJson.length === 0) { throw new Error("Paso 1 falló al procesar la lista."); }
-
-            const promptPaso2 = buildPromptPaso2(unitData, estructuraJson);
-            const resultPaso2 = await model.generateContent(promptPaso2);
-            finalContent = resultPaso2.response.text();
-        } else {
-            const prompt = buildPrompt(blockId, unitData);
-            const result = await model.generateContent(prompt);
-            finalContent = result.response.text();
+        // Validar que el body existe
+        if (!event.body) {
+            console.error('ERROR: No hay body en el request');
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ error: 'No se recibieron datos' }) 
+            };
         }
 
+        console.log('Body recibido:', event.body);
+        
+        // Parsear el JSON con manejo de errores
+        let requestData;
+        try {
+            requestData = JSON.parse(event.body);
+        } catch (parseError) {
+            console.error('ERROR al parsear JSON:', parseError);
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ error: 'JSON inválido', details: parseError.message }) 
+            };
+        }
+
+        console.log('Datos parseados:', JSON.stringify(requestData, null, 2));
+        
+        // Extraer datos con valores por defecto más robustos
+        const formData = requestData.formData || {};
+        const generatedContent = requestData.generatedContent || {};
+        
+        console.log('FormData:', JSON.stringify(formData, null, 2));
+        console.log('GeneratedContent keys:', Object.keys(generatedContent));
+        
+        // Validar datos mínimos requeridos
+        if (!formData.tituloUnidad) {
+            return { 
+                statusCode: 400, 
+                body: JSON.stringify({ error: 'Falta el título de la unidad' }) 
+            };
+        }
+
+        const fechaActual = new Date().toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        const doc = new Document({
+            styles: { paragraphStyles: [{ id: "Normal", name: "Normal", run: { font: "Calibri", size: 22 } }] },
+            sections: [{
+                properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
+                children: [
+                    // --- TÍTULO Y DATOS GENERALES DE LA UNIDAD ---
+                    new Paragraph({ heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `UNIDAD DE APRENDIZAJE: "${formData.tituloUnidad}"`, bold: true, allCaps: true, size: 36 })] }),
+                    createSectionTitle("I. DATOS GENERALES"),
+                    new Table({
+                        width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
+                        columnWidths: [Math.floor(TABLE_WIDTH_DXA * 0.3), Math.floor(TABLE_WIDTH_DXA * 0.7)],
+                        rows: [
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Docente:", bold: true })] })] }), new TableCell({ children: [new Paragraph(formData.docente || '')] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Grado y Nivel:", bold: true })] })] }), new TableCell({ children: [new Paragraph(`${formData.grado || ''} - ${formData.nivel || ''}`)] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Área:", bold: true })] })] }), new TableCell({ children: [new Paragraph(formData.area || '')] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Fecha:", bold: true })] })] }), new TableCell({ children: [new Paragraph(fechaActual)] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: "Duración:", bold: true })] })] }), new TableCell({ children: [new Paragraph(`${formData.duracion || ''} semanas`)] })] }),
+                        ],
+                    }),
+
+                    // --- SECCIONES GENERADAS POR LA IA ---
+                    createSectionTitle("II. JUSTIFICACIÓN"),
+                    ...createFormattedParagraphs(generatedContent.justificacion || "No generado."),
+
+                    createSectionTitle("III. SITUACIÓN SIGNIFICATIVA"),
+                    ...createFormattedParagraphs(generatedContent.situacion || "No generado."),
+                    
+                    createSectionTitle("IV. PROPÓSITO DE LA UNIDAD"),
+                    ...createFormattedParagraphs(generatedContent.proposito || "No generado."),
+
+                    createSectionTitle("V. PROPÓSITOS DE APRENDIZAJE"),
+                    createTableFromMarkdown(generatedContent['propositos-aprendizaje'] || "No generado."),
+
+                    createSectionTitle("VI. COMPETENCIAS Y ENFOQUES TRANSVERSALES"),
+                    ...createFormattedParagraphs(generatedContent['competencias-transversales'] || "No generado."),
+
+                    createSectionTitle("VII. PRODUCTO DE LA UNIDAD"),
+                    ...createFormattedParagraphs(generatedContent.producto || "No generado."),
+                    
+                    createSectionTitle("VIII. SECUENCIA DIDÁCTICA"),
+                    createTableFromMarkdown(generatedContent.secuencia || "No generado."),
+                    
+                    createSectionTitle("IX. EVALUACIÓN"),
+                    createTableFromMarkdown(generatedContent.evaluacion || "No generado."),
+
+                    createSectionTitle("X. RECURSOS Y MATERIALES"),
+                    ...createFormattedParagraphs(generatedContent.recursos || "No generado."),
+                    
+                    // --- SECCIÓN DE FIRMAS ---
+                    createSectionTitle("XI. FIRMAS"),
+                    new Table({
+                        width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
+                        columnWidths: [Math.floor(TABLE_WIDTH_DXA * 0.45), Math.floor(TABLE_WIDTH_DXA * 0.1), Math.floor(TABLE_WIDTH_DXA * 0.45)],
+                        borders: { top: { style: BorderStyle.NONE }, bottom: { style: BorderStyle.NONE }, left: { style: BorderStyle.NONE }, right: { style: BorderStyle.NONE }, insideHorizontal: { style: BorderStyle.NONE }, insideVertical: { style: BorderStyle.NONE } },
+                        rows: [
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: "\n\n__________________________", alignment: AlignmentType.CENTER })] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ text: "\n\n__________________________", alignment: AlignmentType.CENTER })] })] }),
+                            new TableRow({ children: [new TableCell({ children: [new Paragraph({ text: formData.docente || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Docente", alignment: AlignmentType.CENTER })] }), new TableCell({ children: [] }), new TableCell({ children: [new Paragraph({ text: formData.director || '', alignment: AlignmentType.CENTER }), new Paragraph({ text: "Director(a)", alignment: AlignmentType.CENTER })] })] }),
+                        ],
+                    }),
+                ],
+            }],
+        });
+        
+        console.log('Documento Word creado exitosamente');
+        
+        // Generar el archivo
+        const buffer = await Packer.toBuffer(doc);
+        console.log('Buffer generado, tamaño:', buffer.length);
+        
+        // Crear nombre de archivo seguro
+        const safeFileName = (formData.tituloUnidad || "unidad_de_aprendizaje")
+            .replace(/[^a-z0-9áéíóúñü \.,_-]/gim, '')
+            .trim()
+            .replace(/\s+/g, '_');
+        
+        console.log('Nombre de archivo:', safeFileName);
+        
         return {
             statusCode: 200,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ content: finalContent }),
+            headers: { 
+                'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'Content-Disposition': `attachment; filename="${safeFileName}.docx"`
+            },
+            body: buffer.toString('base64'),
+            isBase64Encoded: true,
         };
+        
     } catch (error) {
-        console.error("Error en la función serverless:", error.message);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ message: 'Error al contactar la API de Gemini.', error: error.message }),
+        console.error("=== ERROR COMPLETO ===");
+        console.error("Mensaje:", error.message);
+        console.error("Stack:", error.stack);
+        console.error("======================");
+        
+        return { 
+            statusCode: 500, 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                error: 'Error interno del servidor al generar el documento',
+                details: error.message,
+                timestamp: new Date().toISOString()
+            }) 
         };
     }
 };
