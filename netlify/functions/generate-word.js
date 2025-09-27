@@ -61,7 +61,7 @@ exports.handler = async (event) => {
     try {
         // --- AQUÍ ESTÁ LA CORRECCIÓN ---
         // Se añade un valor por defecto `{}` para `generatedContent` para evitar el error.
-        const { formData, generatedContent = {} } = JSON.parse(event.body);
+        const { formData = {}, generatedContent = {} } = JSON.parse(event.body);
         const fechaActual = new Date().toLocaleDateString('es-PE', { year: 'numeric', month: 'long', day: 'numeric' });
 
         const doc = new Document({
@@ -70,7 +70,7 @@ exports.handler = async (event) => {
                 properties: { page: { margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 } } },
                 children: [
                     // --- TÍTULO Y DATOS GENERALES DE LA UNIDAD ---
-                    new Paragraph({ heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `UNIDAD DE APRENDIZAJE: "${formData.tituloUnidad}"`, bold: true, allCaps: true, size: 36 })] }),
+                    new Paragraph({ heading: HeadingLevel.TITLE, alignment: AlignmentType.CENTER, spacing: { after: 300 }, children: [new TextRun({ text: `UNIDAD DE APRENDIZAJE: "${formData.tituloUnidad || 'SIN TÍTULO'}"`, bold: true, allCaps: true, size: 36 })] }),
                     createSectionTitle("I. DATOS GENERALES"),
                     new Table({
                         width: { size: TABLE_WIDTH_DXA, type: WidthType.DXA },
