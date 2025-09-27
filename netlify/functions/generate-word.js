@@ -95,7 +95,7 @@ exports.handler = async (event) => {
                     ...createFormattedParagraphs(generatedContent.proposito || "No generado."),
 
                     createSectionTitle("V. PROPÓSITOS DE APRENDIZAJE"),
-                    createTableFromMarkdown(generatedContent['propositos-aprendizaje'] || "No generado."),
+                    ...[].concat(createTableFromMarkdown(generatedContent['propositos-aprendizaje'] || "No generado.")),
 
                     createSectionTitle("VI. COMPETENCIAS Y ENFOQUES TRANSVERSALES"),
                     ...createFormattedParagraphs(generatedContent['competencias-transversales'] || "No generado."),
@@ -104,10 +104,10 @@ exports.handler = async (event) => {
                     ...createFormattedParagraphs(generatedContent.producto || "No generado."),
                     
                     createSectionTitle("VIII. SECUENCIA DIDÁCTICA"),
-                    createTableFromMarkdown(generatedContent.secuencia || "No generado."),
+                    ...[].concat(createTableFromMarkdown(generatedContent.secuencia || "No generado.")),
                     
                     createSectionTitle("IX. EVALUACIÓN"),
-                    createTableFromMarkdown(generatedContent.evaluacion || "No generado."),
+                    ...[].concat(createTableFromMarkdown(generatedContent.evaluacion || "No generado.")),
 
                     createSectionTitle("X. RECURSOS Y MATERIALES"),
                     ...createFormattedParagraphs(generatedContent.recursos || "No generado."),
