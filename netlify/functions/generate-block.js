@@ -52,7 +52,7 @@ const buildPrompt = (blockId, unitData) => {
             instructionPrompt = `Genera una tabla Markdown para los Propósitos de Aprendizaje con las columnas: Competencias | Capacidades | Desempeños | Evidencias.
             **Reglas estrictas:**
             - Para cada competencia seleccionada, genera muy breve solo **dos** de sus capacidades que tengan que ver con la competencia seleccionada.
-            - Para cada una de esas capacidades, genera muy breve solo **tres** desempeños precisos y observables.
+            - Para cada una de esas capacidades, genera muy breve solo **dos** desempeños precisos y observables.
             - Sé muy breve en la descripción de las evidencias.`;
             break;
         case 'competencias-transversales':
