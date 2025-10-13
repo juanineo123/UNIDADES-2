@@ -136,9 +136,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleNextStep1() {
+        // Captura las competencias como objetos con más detalles
         const competenciasSeleccionadas =
             Array.from(document.querySelectorAll('input[name="competencia"]:checked'))
-                .map(cb => cb.value);
+                .map(cb => {
+                    const nivel = nivelSelect.value;
+                    const area = areaSelect.value;
+                    const grado = gradoSelect.value;
+                    const ciclo = curriculoData[nivel].ciclosPorGrado[grado];
+
+                    // Busca la competencia completa en data.js
+                    const competenciaData = curriculoData[nivel].areas[area].competencias.find(c => c.nombre === cb.value);
+
+                    // Retorna un objeto enriquecido con DESEMPEÑOS del grado
+                    return {
+                        nombre: competenciaData.nombre,
+                        capacidades: competenciaData.capacidades,
+                        estandar: competenciaData.estandares[ciclo],
+                        desempenos: competenciaData.desempenos[grado] || [] // ← NUEVA LÍNEA
+                    };
+                });
+
+        // Captura los enfoques transversales seleccionados
+        // Captura los enfoques transversales seleccionados CON SUS DATOS COMPLETOS
+        const enfoquesSeleccionados =
+            Array.from(document.querySelectorAll('input[name="enfoque"]:checked'))
+                .map(cb => {
+                    // Buscar el enfoque completo en data.js
+                    const enfoqueCompleto = enfoquesTransversales.find(e => e.nombre === cb.value);
+                    return {
+                        nombre: enfoqueCompleto.nombre,
+                        valores: enfoqueCompleto.valores,
+                        descripcion: enfoqueCompleto.descripcion
+                    };
+                });
 
         wizardData = {
             ...wizardData,
@@ -149,8 +180,15 @@ document.addEventListener('DOMContentLoaded', () => {
             grado: gradoSelect.value,
             area: areaSelect.value,
             duracion: document.getElementById('duracion').value,
+            anioLectivo: document.getElementById('anio-lectivo').value, // ← NUEVA LÍNEA 1
+            periodo: document.getElementById('periodo').value, // ← NUEVA LÍNEA 2
+            numEstudiantes: document.getElementById('num-estudiantes').value, // ← NUEVA LÍNEA 3
+            turno: document.getElementById('turno').value, // ← NUEVA LÍNEA 4
             fecha: fechaInput.value,
             competencias: competenciasSeleccionadas,
+            enfoques: enfoquesSeleccionados,
+            ciclo: curriculoData[nivelSelect.value].ciclosPorGrado[gradoSelect.value],
+            competenciasTransversales: competenciasTransversales,
         };
         goToStep(2);
     }
@@ -161,6 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tituloUnidad: document.getElementById('titulo-unidad').value,
             temasClave: document.getElementById('temas-clave').value,
             contexto: document.getElementById('contexto').value,
+            integracionAreas: document.getElementById('integracion-areas').value, // ← NUEVA LÍNEA
             situacionSource: situacionSourceSelect.value,
             situacionManual: situacionManualTextarea.value,
         };
@@ -169,24 +208,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function createSummary() {
-        let situacionResumen = 'Generada por IA';
+        let situacionResumen = '✨ Generada por IA con estructura de 3 partes';
         if (wizardData.situacionSource === 'manual' && wizardData.situacionManual) {
-            situacionResumen = `Manual: <em>"${wizardData.situacionManual.substring(0, 50)}..."</em>`;
+            const preview = wizardData.situacionManual.substring(0, 80).replace(/\n/g, ' ');
+            situacionResumen = `📝 Manual: <em>"${preview}..."</em>`;
         } else if (wizardData.situacionSource === 'manual' && !wizardData.situacionManual) {
-            situacionResumen = 'Manual (no proporcionada, se generará por IA)';
+            situacionResumen = '⚠️ Manual (no proporcionada, se generará por IA)';
         }
 
         resumenContainer.innerHTML = `
-            <h3 class="text-xl font-bold font-rajdhani text-cyan-300 mb-4">Confirmar Datos</h3>
-            <ul class="space-y-2 text-gray-300">
-                <li><strong>Título:</strong> ${wizardData.tituloUnidad || 'No definido'}</li>
-                <li><strong>Nivel:</strong> ${wizardData.nivel}</li>
-                <li><strong>Grado:</strong> ${wizardData.grado}</li>
-                <li><strong>Área:</strong> ${wizardData.area}</li>
-                <li><strong>Situación Significativa:</strong> ${situacionResumen}</li>
-                <li><strong>Competencias:</strong> ${wizardData.competencias.join(', ')}</li>
-            </ul>
-        `;
+    <h3 class="text-xl font-bold font-rajdhani text-cyan-300 mb-4">Confirmar Datos</h3>
+    <ul class="space-y-2 text-gray-300">
+        <li><strong>Título:</strong> ${wizardData.tituloUnidad || 'No definido'}</li>
+        <li><strong>Nivel:</strong> ${wizardData.nivel}</li>
+        <li><strong>Grado:</strong> ${wizardData.grado}</li>
+        <li><strong>Ciclo:</strong> ${wizardData.ciclo}</li>
+        <li><strong>Área:</strong> ${wizardData.area}</li>
+        <li><strong>Año Lectivo:</strong> ${wizardData.anioLectivo}</li>
+        <li><strong>Periodo:</strong> ${wizardData.periodo}</li>
+        <li><strong>Nº Estudiantes:</strong> ${wizardData.numEstudiantes}</li>
+        <li><strong>Turno:</strong> ${wizardData.turno}</li>
+        <li><strong>Duración:</strong> ${wizardData.duracion} semana(s)</li>
+        <li><strong>Situación Significativa:</strong> ${situacionResumen}</li>
+        <li><strong>Competencias:</strong> ${wizardData.competencias.map(c => c.nombre).join(', ')}</li>
+        <li><strong>Enfoques:</strong> ${wizardData.enfoques.map(e => e.nombre).join(', ') || 'No seleccionados'}</li>
+    </ul>
+`;
     }
 
     // === 6. LÓGICA DE GENERACIÓN DE LA UNIDAD ===
@@ -196,6 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         unidadGeneradaContainer.innerHTML = '';
         generatedMarkdownContent = {};
 
+        // Construir estructura base
         const unitStructure = [
             { id: 'titulo', title: 'I. TÍTULO DE LA UNIDAD', needsAI: false },
             { id: 'datos', title: 'II. DATOS INFORMATIVOS', needsAI: false },
@@ -203,14 +251,23 @@ document.addEventListener('DOMContentLoaded', () => {
             { id: 'situacion', title: 'IV. SITUACIÓN SIGNIFICATIVA', needsAI: true },
             { id: 'producto', title: 'V. PRODUCTO DE LA UNIDAD', needsAI: true },
             { id: 'proposito', title: 'VI. PROPÓSITO DE LA UNIDAD', needsAI: true },
-            { id: 'propositos-aprendizaje', title: 'VII. PROPÓSITOS DE APRENDIZAJE', needsAI: true },
-            { id: 'competencias-transversales', title: 'VIII. COMPETENCIAS Y ENFOQUES TRANSVERSALES', needsAI: true },
-            { id: 'secuencia', title: 'IX. SECUENCIA DIDÁCTICA DE LA UNIDAD', needsAI: true },
-            { id: 'evaluacion', title: 'X. EVALUACIÓN', needsAI: true },
-            { id: 'recursos', title: 'XI. RECURSOS Y MATERIALES', needsAI: true },
-            { id: 'firmas', title: 'XII. CAMPO DE FIRMAS', needsAI: false },
+            { id: 'propositos-aprendizaje', title: 'VII. PROPÓSITOS DE APRENDIZAJE', needsAI: false },
+            { id: 'competencias-transversales', title: 'VIII. COMPETENCIAS TRANSVERSALES', needsAI: false },
+            { id: 'enfoques-transversales', title: 'IX. ENFOQUES TRANSVERSALES', needsAI: false },
+            { id: 'secuencia', title: 'X. SECUENCIA DIDÁCTICA DE LA UNIDAD', needsAI: true },
+            { id: 'evaluacion', title: 'XI. EVALUACIÓN', needsAI: false },
+            { id: 'recursos', title: 'XII. RECURSOS Y MATERIALES', needsAI: true },
+            { id: 'orientaciones', title: 'XIII. ORIENTACIONES PEDAGÓGICAS', needsAI: true },
+            { id: 'referencias', title: 'XIV. REFERENCIAS BIBLIOGRÁFICAS', needsAI: true },
         ];
 
+        // Agregar Vinculación Interdisciplinaria solo si el usuario especificó integración
+        if (wizardData.integracionAreas && wizardData.integracionAreas.trim() !== '') {
+            unitStructure.push({ id: 'vinculacion', title: 'XV. VINCULACIÓN INTERDISCIPLINARIA', needsAI: true });
+            unitStructure.push({ id: 'firmas', title: 'XVI. CAMPO DE FIRMAS', needsAI: false });
+        } else {
+            unitStructure.push({ id: 'firmas', title: 'XV. CAMPO DE FIRMAS', needsAI: false });
+        }
         for (const block of unitStructure) {
             const blockElement = document.createElement('div');
             blockElement.id = `block-${block.id}`;
@@ -251,12 +308,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `### ${wizardData.tituloUnidad}`;
             case 'datos':
                 return `
-| Docente | Director/a | I.E. | Nivel |
+| Campo | Valor | Campo | Valor |
 | :--- | :--- | :--- | :--- |
-| ${wizardData.docente} | ${wizardData.director} | ${wizardData.ie} | ${wizardData.nivel} |
-| **Grado** | **Área** | **Duración** | **Fecha** |
-| ${wizardData.grado} | ${wizardData.area} | ${wizardData.duracion} semana(s) | ${wizardData.fecha} |
+| **Docente** | ${wizardData.docente} | **Director/a** | ${wizardData.director} |
+| **I.E.** | ${wizardData.ie} | **Nivel** | ${wizardData.nivel} |
+| **Grado** | ${wizardData.grado} | **Ciclo** | ${wizardData.ciclo} |
+| **Área** | ${wizardData.area} | **Año Lectivo** | ${wizardData.anioLectivo} |
+| **Periodo** | ${wizardData.periodo} | **Duración** | ${wizardData.duracion} semana(s) |
+| **Nº Estudiantes** | ${wizardData.numEstudiantes} | **Turno** | ${wizardData.turno} |
+| **Fecha** | ${wizardData.fecha} | | |
 `;
+
+            case 'propositos-aprendizaje':
+                return buildPropositos();
+
+            case 'competencias-transversales':
+                return buildCompetenciasTransversales();
+
+            case 'enfoques-transversales':
+                return buildEnfoquesTransversales();
+
+            case 'evaluacion':
+                return buildEvaluacion();
+
             case 'situacion':
                 return wizardData.situacionManual;
             case 'firmas':
@@ -283,6 +357,98 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function buildPropositos() {
+        let tablaSimple = `
+| Competencias | Capacidades |
+|--------------|-------------|
+`;
+
+        let seccionesAdicionales = '';
+
+        wizardData.competencias.forEach((comp, index) => {
+            const numero = index + 1;
+            const capacidadesTexto = comp.capacidades.join('<br>• ');
+
+            // TABLA SIMPLE
+            tablaSimple += `| ${comp.nombre} | • ${capacidadesTexto} |\n`;
+
+            // SECCIONES FUERA DE LA TABLA
+            seccionesAdicionales += `
+
+### ✅ Competencia ${numero}: ${comp.nombre}
+
+**📋 Estándar del Ciclo ${wizardData.ciclo}:**
+${comp.estandar}
+
+**🎯 Desempeños del ${wizardData.grado}:**
+${comp.desempenos ? comp.desempenos.map((d, i) => `${i + 1}. ${d}`).join('\n') : '• No disponibles'}
+
+**📊 Criterios de Evaluación:**
+${comp.desempenos ? comp.desempenos.slice(0, 3).map((d, i) => {
+                const criterio = d.split('.')[0].replace(/^(Explica|Describe|Identifica|Reconoce|Argumenta|Propone|Participa)/i, (match) => {
+                    return 'Que ' + match.toLowerCase();
+                });
+                return `${i + 1}. ${criterio}`;
+            }).join('\n') : '• No disponibles'}
+
+**📝 Evidencias:**
+- Informe escrito
+- Exposición oral
+- Organizador gráfico
+
+---
+`;
+        });
+
+        return tablaSimple + '\n' + seccionesAdicionales;
+    }
+    function buildCompetenciasTransversales() {
+        let contenido = '### A. COMPETENCIAS TRANSVERSALES\n\n';
+        contenido += '| Competencia Transversal | Capacidades que se trabajarán | Desempeños/Acciones concretas en esta unidad | Evidencias |\n';
+        contenido += '|------------------------|-------------------------------|---------------------------------------------|------------|\n';
+
+        const ct = wizardData.competenciasTransversales;
+
+        ct.forEach(competencia => {
+            const capacidades = competencia.capacidades.slice(0, 2).join('<br>• ');
+            const desempenos = `• Los estudiantes organizan su tiempo de trabajo<br>• Reflexionan sobre su proceso de aprendizaje relacionado con ${wizardData.temasClave}`;
+            const evidencias = 'Cuaderno de trabajo<br>Autoevaluación';
+
+            contenido += `| ${competencia.nombre} | • ${capacidades} | ${desempenos} | ${evidencias} |\n`;
+        });
+
+        return contenido;
+    }
+
+    function buildEnfoquesTransversales() {
+        let contenido = '| Enfoque Transversal | Valores | Actitudes - Estudiantes | Actitudes - Docente |\n';
+        contenido += '|---------------------|---------|------------------------|---------------------|\n';
+
+        wizardData.enfoques.forEach(enfoque => {
+            const valores = enfoque.valores.join(', ');
+            const actitudesEst = `• Respetan las diferencias<br>• Participan activamente en ${wizardData.temasClave}<br>• Demuestran interés por aprender`;
+            const actitudesDoc = `• Promueve el respeto mutuo<br>• Genera espacios de diálogo<br>• Contextualiza al entorno: ${wizardData.contexto}`;
+
+            contenido += `| ${enfoque.nombre} | ${valores} | ${actitudesEst} | ${actitudesDoc} |\n`;
+        });
+
+        return contenido;
+    }
+
+    function buildEvaluacion() {
+        let contenido = '| Competencia | Criterios de Evaluación | Evidencias | Instrumentos | Momento |\n';
+        contenido += '|-------------|------------------------|------------|--------------|----------|\n';
+
+        wizardData.competencias.forEach(comp => {
+            const criterios = comp.desempenos ? comp.desempenos.slice(0, 2).map(d =>
+                '• ' + d.split('.')[0]
+            ).join('<br>') : '• Criterio no disponible';
+
+            contenido += `| ${comp.nombre} | ${criterios} | Informe<br>Exposición | Rúbrica<br>Lista de cotejo | Formativa/Proceso |\n`;
+        });
+
+        return contenido;
+    }
     /**
  * Realiza una solicitud fetch con reintentos automáticos.
  * @param {string} url La URL a la que se hará la solicitud.
@@ -350,8 +516,8 @@ document.addEventListener('DOMContentLoaded', () => {
             // Corresponde a netlify/functions/generate-word.js
             const endpoint = '/.netlify/functions/generate-word';
 
-           const response = await fetchWithRetries(endpoint, {
-            method: 'POST',
+            const response = await fetchWithRetries(endpoint, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ wizardData, generatedMarkdownContent })
             });
@@ -395,6 +561,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('form-step-2').reset();
         situacionManualContainer.classList.add('hidden');
         fechaInput.valueAsDate = new Date();
+        document.getElementById('anio-lectivo').value = new Date().getFullYear();
         updateGrados();
 
         wizardContainer.classList.remove('hidden');

@@ -6,55 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Generador de Unidades de Aprendizaje v-2.0</title>
 
-    <!-- ===== INICIO DEL CÓDIGO GUARDIA DE SEGURIDAD FINAL (Compatible con Netlify) ===== -->
-    <script type="module">
-        // 1. IMPORTACIONES (Siempre al principio)
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-app.js";
-        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.23.0/firebase-auth.js";
-
-        // 2. LÓGICA DEL GUARDIA
-        const urlParams = new URLSearchParams(window.location.search);
-
-        // Si la "llave" de la Suite (`?autorizado=true`) NO está, el guardia actúa.
-        if (urlParams.get('autorizado') !== 'true') {
-
-            // La configuración de Firebase. Es necesaria para que funcione en Netlify.
-            // La seguridad real está en los "Dominios Autorizados" de la consola de Firebase.
-            // ESTA ES LA CONFIGURACIÓN CORRECTA Y UNIFICADA
-            const firebaseConfig = {
-                apiKey: "AIzaSyD_SCyO4s-fZZS2qBTKEqAFiWP3IPD97Uo",
-                authDomain: "plataforma-escala.firebaseapp.com",
-                projectId: "plataforma-escala",
-                storageBucket: "plataforma-escala.firebasestorage.app",
-                messagingSenderId: "917193676993",
-                appId: "1:917193676993:web:da3a51e59246bd917c1c40"
-            };
-
-            const suiteLoginPageUrl = 'https://www.caicedoeduca.com/';
-
-            try {
-                const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
-
-                onAuthStateChanged(auth, (user) => {
-                    if (!user) {
-                        // Si no hay sesión de usuario, redirige a la suite.
-                        console.log("GUARDIA: Acceso no autorizado. Redirigiendo a la suite...");
-                        window.top.location.href = suiteLoginPageUrl;
-                    } else {
-                        console.log("GUARDIA: Usuario autenticado. Acceso permitido.");
-                    }
-                });
-            } catch (error) {
-                console.error("GUARDIA: Error crítico.", error);
-                window.top.location.href = suiteLoginPageUrl;
-            }
-        } else {
-            // Si la llave de la Suite está presente, el guardia no hace nada.
-            console.log("GUARDIA: Acceso autorizado por la Suite. El guardia no actuará.");
-        }
-    </script>
-    <!-- ===== FIN DEL CÓDIGO GUARDIA DE SEGURIDAD FINAL (Compatible con Netlify) ===== -->
+   
 
     <link rel="icon" href="data:;base64,iVBORw0KGgo=">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -126,23 +78,105 @@
                             <option value="3">3 semanas</option>
                             <option value="4">4 semanas</option>
                             <option value="5">5 semanas</option>
+                            <option value="6">6 semanas</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label for="anio-lectivo" class="block mb-2 text-sm font-medium text-cyan-200">8. Año
+                            Lectivo:</label>
+                        <input type="number" id="anio-lectivo" placeholder="2025" class="input-field" value="2025"
+                            min="2020" max="2030">
+                    </div>
+                    <div>
+                        <label for="periodo" class="block mb-2 text-sm font-medium text-cyan-200">9. Periodo:</label>
+                        <select id="periodo" class="input-field">
+                            <option value="I Bimestre">I Bimestre</option>
+                            <option value="II Bimestre">II Bimestre</option>
+                            <option value="III Bimestre">III Bimestre</option>
+                            <option value="IV Bimestre">IV Bimestre</option>
+                            <option value="I Trimestre">I Trimestre</option>
+                            <option value="II Trimestre">II Trimestre</option>
+                            <option value="III Trimestre">III Trimestre</option>
+                            <option value="I Semestre">I Semestre</option>
+                            <option value="II Semestre">II Semestre</option>
                         </select>
                     </div>
                     <div>
-                        <label for="fecha" class="block mb-2 text-sm font-medium text-cyan-200">8. Fecha de
+                        <label for="num-estudiantes" class="block mb-2 text-sm font-medium text-cyan-200">10. Número de
+                            Estudiantes:</label>
+                        <input type="number" id="num-estudiantes" placeholder="25" class="input-field" min="1" max="50">
+                    </div>
+                    <div>
+                        <label for="turno" class="block mb-2 text-sm font-medium text-cyan-200">11. Turno:</label>
+                        <select id="turno" class="input-field">
+                            <option value="Mañana">Mañana</option>
+                            <option value="Tarde">Tarde</option>
+                            <option value="Noche">Noche</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="fecha" class="block mb-2 text-sm font-medium text-cyan-200">12. Fecha de
                             Inicio:</label>
                         <input type="date" id="fecha" class="input-field">
                     </div>
+                    
+                        
                     <div class="md:col-span-2 bg-gray-900/50 p-4 rounded-lg mt-4">
-                        <label class="block mb-2 text-sm font-medium text-cyan-200">9. Competencias a
+                        <label class="block mb-2 text-sm font-medium text-cyan-200">13. Competencias a
                             desarrollar:</label>
                         <div id="competencias-checkboxes" class="text-gray-300">
                             <p>Seleccione un área para ver las competencias.</p>
                         </div>
                     </div>
+                    <div class="md:col-span-2 bg-gray-900/50 p-4 rounded-lg mt-4">
+                        <label class="block mb-2 text-sm font-medium text-cyan-200">14. Enfoques Transversales a
+                            priorizar:</label>
+                        <div id="enfoques-checkboxes" class="grid grid-cols-1 md:grid-cols-2 gap-2 text-gray-300">
+
+                            <label class="flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer">
+                                <input type="checkbox" name="enfoque" value="Enfoque de Derechos"
+                                    class="mr-3 w-5 h-5 accent-cyan-400">
+                                <span>Enfoque de Derechos</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer">
+                                <input type="checkbox" name="enfoque"
+                                    value="Enfoque Inclusivo o de Atención a la Diversidad"
+                                    class="mr-3 w-5 h-5 accent-cyan-400">
+                                <span>Enfoque Inclusivo</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer">
+                                <input type="checkbox" name="enfoque" value="Enfoque Intercultural"
+                                    class="mr-3 w-5 h-5 accent-cyan-400">
+                                <span>Enfoque Intercultural</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer">
+                                <input type="checkbox" name="enfoque" value="Enfoque de Igualdad de Género"
+                                    class="mr-3 w-5 h-5 accent-cyan-400">
+                                <span>Enfoque de Igualdad de Género</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer">
+                                <input type="checkbox" name="enfoque" value="Enfoque Ambiental"
+                                    class="mr-3 w-5 h-5 accent-cyan-400">
+                                <span>Enfoque Ambiental</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer">
+                                <input type="checkbox" name="enfoque" value="Enfoque de Orientación al Bien Común"
+                                    class="mr-3 w-5 h-5 accent-cyan-400">
+                                <span>Enfoque de Orientación al Bien Común</span>
+                            </label>
+                            <label class="flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer">
+                                <input type="checkbox" name="enfoque" value="Enfoque de Búsqueda de la Excelencia"
+                                    class="mr-3 w-5 h-5 accent-cyan-400">
+                                <span>Enfoque de Búsqueda de la Excelencia</span>
+                            </label>
+
+                        </div>
+                    </div>
                     <div class="md:col-span-2 text-right mt-4">
                         <button type="button" id="btn-next-1" class="btn btn-primary">Siguiente</button>
                     </div>
+
                 </form>
             </div>
 
@@ -169,6 +203,22 @@
                             placeholder="Contexto de los estudiantes (Opcional pero recomendado) Ejm: Los estudiantes viven en una zona rural de la cuidad de Tarapoto llamada: Miraflores"
                             class="input-field h-32"></textarea>
                     </div>
+                    
+                        
+
+                    <div class="bg-gray-900/50 p-4 rounded-lg">
+                        <label for="integracion-areas" class="block mb-2 text-sm font-medium text-cyan-200">
+                            3.1. Integración con otras áreas (Opcional):
+                        </label>
+                        <p class="text-xs text-gray-400 mb-3">
+                            Si esta unidad integra o se vincula con otras áreas curriculares, especifica cuáles y cómo
+                            se relacionan.
+                            Déjalo vacío si es una unidad de área única.
+                        </p>
+                        <textarea id="integracion-areas"
+                            placeholder="Ejemplo: Esta unidad se vincula con Comunicación en la producción de textos descriptivos, y con Arte y Cultura en la creación de representaciones visuales..."
+                            class="input-field h-24"></textarea>
+                    </div>
 
                     <div>
                         <label for="situacion-source" class="block mb-2 text-sm font-medium text-cyan-200">4. Situación
@@ -181,8 +231,19 @@
                     <div id="situacion-manual-container" class="hidden">
                         <label for="situacion-manual" class="block mb-2 text-sm font-medium text-cyan-200">5. Escriba su
                             Situación Significativa:</label>
-                        <textarea id="situacion-manual" placeholder="Escriba aquí su Situación Significativa"
-                            class="input-field h-32"></textarea>
+                        <div class="bg-gray-900/70 p-3 rounded-lg mb-3 text-xs text-gray-400">
+                            <p class="font-semibold text-cyan-300 mb-2">📋 Estructura sugerida (usa estos 3 subtítulos):
+                            </p>
+                            <ul class="space-y-1 ml-4">
+                                <li>• <strong>1. Contexto y Problemática:</strong> Situación real que enfrentan</li>
+                                <li>• <strong>2. Reto o Desafío:</strong> Qué deben lograr o resolver</li>
+                                <li>• <strong>3. Propósito y Preguntas Orientadoras:</strong> Objetivo y preguntas clave
+                                </li>
+                            </ul>
+                        </div>
+                        <textarea id="situacion-manual"
+                            placeholder="### 1. Contexto y Problemática&#10;[Describe la situación...]&#10;&#10;### 2. Reto o Desafío&#10;[Plantea el desafío...]&#10;&#10;### 3. Propósito y Preguntas Orientadoras&#10;[Explicita el propósito y preguntas...]"
+                            class="input-field h-40"></textarea>
                     </div>
 
                     <div class="flex justify-between mt-4">
