@@ -140,21 +140,23 @@ ${enfoquesDetalle}
 | Enfoque X | Valor1, Valor2 | - Actitud específica 1<br>- Actitud específica 2 | - Acción docente 1<br>- Acción docente 2 |`;
             break;
         case 'secuencia':
-            const sesionesAprox = duracion * 2;
+            const esIntegrada = unitData.areasIntegradas && unitData.areasIntegradas.length > 1;
+            const sesionesAprox = esIntegrada ? duracion * 1 : duracion * 2;
 
-            instructionPrompt = `Genera tabla Secuencia Didáctica con EXACTAMENTE ${duracion} semanas y ${sesionesAprox} sesiones.
+            instructionPrompt = `Genera tabla con ${duracion} semanas. ${esIntegrada ? '1 SESIÓN' : '2 SESIONES'} POR SEMANA.
 
 Columnas: Semana | Sesión | Título | Propósito | Competencias | Tiempo | Recursos | Tipo Evaluación
 
-**CRÍTICO:**
-- Semana 1: sesiones 1, 2
-- Semana 2: sesiones 3, 4
-- Semana 3: sesiones 5, 6
-- NO REPETIR semanas. Cada número de semana UNA SOLA VEZ.
-- Total: ${duracion} filas con diferentes números de semana
+${esIntegrada ? `
+UNIDAD INTEGRADA - Áreas: ${unitData.areasIntegradas.join(', ')}
+- ${duracion} semanas × 1 sesión = ${sesionesAprox} sesiones TOTAL
+- Cada sesión integra competencias de diferentes áreas
+` : `
+- ${duracion} semanas × 2 sesiones = ${sesionesAprox} sesiones TOTAL
+`}
 
 Temas: ${temasClave}
-Primera sesión: diagnóstica. Última: sumativa + producto.`;
+Primera: diagnóstica. Última: sumativa + producto.`;
             break;
         case 'evaluacion':
             // Construir información de las competencias para la evaluación
