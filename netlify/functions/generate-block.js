@@ -140,16 +140,16 @@ ${enfoquesDetalle}
 | Enfoque X | Valor1, Valor2 | - Actitud específica 1<br>- Actitud específica 2 | - Acción docente 1<br>- Acción docente 2 |`;
             break;
         case 'secuencia':
-            const sesionesAprox = duracion * 3;
+            const sesionesAprox = duracion * 2;
 
             instructionPrompt = `Genera tabla Secuencia Didáctica con EXACTAMENTE ${duracion} semanas y ${sesionesAprox} sesiones.
 
 Columnas: Semana | Sesión | Título | Propósito | Competencias | Tiempo | Recursos | Tipo Evaluación
 
 **CRÍTICO:**
-- Semana 1: sesiones 1, 2, 3
-- Semana 2: sesiones 4, 5, 6
-- Semana 3: sesiones 7, 8, 9
+- Semana 1: sesiones 1, 2
+- Semana 2: sesiones 3, 4
+- Semana 3: sesiones 5, 6
 - NO REPETIR semanas. Cada número de semana UNA SOLA VEZ.
 - Total: ${duracion} filas con diferentes números de semana
 

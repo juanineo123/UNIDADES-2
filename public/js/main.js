@@ -133,7 +133,17 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         window.scrollTo({ top: wizardContainer.offsetTop - 20, behavior: 'smooth' });
+        }
+
+    function mapGrado(grado) {
+        const map = {"1er Grado":"1°","2do Grado":"2°","3er Grado":"3°","4to Grado":"4°","5to Grado":"5°","6to Grado":"6°"};
+        return map[grado] || grado;
     }
+
+    function handleNextStep1() {
+    }
+
+
 
     function handleNextStep1() {
         // Captura las competencias como objetos con más detalles
@@ -153,7 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         nombre: competenciaData.nombre,
                         capacidades: competenciaData.capacidades,
                         estandar: competenciaData.estandares[ciclo],
-                        desempenos: competenciaData.desempenos[grado] || [] // ← NUEVA LÍNEA
+                        desempenos: competenciaData.desempenos[mapGrado(grado)] || []
                     };
                 });
 
@@ -384,12 +394,7 @@ ${comp.estandar}
 ${comp.desempenos ? comp.desempenos.map((d, i) => `${i + 1}. ${d}`).join('\n') : '• No disponibles'}
 
 **📊 Criterios de Evaluación:**
-${comp.desempenos ? comp.desempenos.slice(0, 3).map((d, i) => {
-                const criterio = d.split('.')[0].replace(/^(Explica|Describe|Identifica|Reconoce|Argumenta|Propone|Participa)/i, (match) => {
-                    return 'Que ' + match.toLowerCase();
-                });
-                return `${i + 1}. ${criterio}`;
-            }).join('\n') : '• No disponibles'}
+${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).map((d, i) => `${i + 1}. ${d}`).join('\n') : '• No disponibles'}
 
 **📝 Evidencias:**
 - Informe escrito
