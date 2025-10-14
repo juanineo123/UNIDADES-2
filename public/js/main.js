@@ -146,8 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 label.className = 'flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer';
                 label.innerHTML = `
                 <input type="checkbox" name="competencia" value="${comp.nombre}" data-area="${area}" class="mr-3 w-5 h-5 accent-cyan-400">
-                <span class="text-sm">${comp.nombre}</span>
-            `;
+                <span>${comp.nombre}</span>
+                `;
                 areaDiv.appendChild(label);
             });
 
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const label = document.createElement('label');
                     label.className = 'flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer';
                     label.innerHTML = `
-                        <input type="checkbox" name="competencia" value="${comp.nombre}" class="mr-3 w-5 h-5 accent-cyan-400">
+                        
                         <span>${comp.nombre}</span>
                     `;
                     competenciasContainer.appendChild(label);
@@ -209,6 +209,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function handleNextStep1() {
+
+        const areaCompetencia = cb.dataset.area || areaSelect.value;
+
+        // ========== DEBUGGING FORZADO ==========
+        console.log('🔴 ÁREA:', areaCompetencia);
+        console.log('🔴 NIVEL:', nivel);
+        console.log('🔴 GRADO:', grado);
+        console.log('🔴 GRADO MAPEADO:', mapGrado(grado));
+
+        const competenciaData = curriculoData[nivel].areas[areaCompetencia].competencias.find(c => c.nombre === cb.value);
+
+        console.log('🔴 COMPETENCIA ENCONTRADA:', !!competenciaData);
+        if (competenciaData) {
+            console.log('🔴 TIENE DESEMPENOS:', !!competenciaData.desempenos);
+            if (competenciaData.desempenos) {
+                console.log('🔴 CLAVES:', Object.keys(competenciaData.desempenos));
+            }
+        }
+        // =======================================
         // Captura las competencias como objetos con más detalles
         const nivel = nivelSelect.value;
         const grado = gradoSelect.value;
