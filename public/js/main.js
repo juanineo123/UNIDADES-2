@@ -195,7 +195,14 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function mapGrado(grado) {
-        const map = { "1er Grado": "1°", "2do Grado": "2°", "3er Grado": "3°", "4to Grado": "4°", "5to Grado": "5°", "6to Grado": "6°" };
+        const map = {
+            "1er Grado": "1°",
+            "2do Grado": "2°",
+            "3er Grado": "3°",
+            "4to Grado": "4°",
+            "5to Grado": "5°",
+            "6to Grado": "6°"
+        };
         return map[grado] || grado;
     }
 
@@ -444,12 +451,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function sanitizeText(text) {
+        if (!text || typeof text !== 'string') return '';
+        return text
+            .replace(/[<>]/g, '') // Eliminar < y >
+            .replace(/\|/g, 'ǀ') // Reemplazar pipes que rompen tablas
+            .replace(/\n+/g, ' ') // Saltos de línea → espacios
+            .replace(/\s+/g, ' ') // Múltiples espacios → uno solo
+            .trim();
+    }
+
     function buildPropositos() {
         const esIntegrada = wizardData.areasIntegradas && wizardData.areasIntegradas.length > 1;
 
-        let tablaSimple = `
-| Competencias | Capacidades | ${esIntegrada ? 'Área |' : ''}
-|--------------|-------------|${esIntegrada ? '------|' : ''}
+        let tablaSimple = esIntegrada
+            ? `
+| Competencias | Capacidades | Área |
+|--------------|-------------|------|
+`
+            : `
+| Competencias | Capacidades |
+|--------------|-------------|
 `;
 
         let seccionesAdicionales = '';
@@ -459,7 +481,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const capacidadesTexto = comp.capacidades.join('<br>• ');
 
             // TABLA SIMPLE
-            tablaSimple += `| ${comp.nombre} | • ${capacidadesTexto} |${esIntegrada ? ` ${comp.area} |` : ''}\n`;
+            const nombreLimpio = sanitizeText(comp.nombre);
+            const areaLimpia = esIntegrada ? sanitizeText(comp.area) : '';
+            tablaSimple += esIntegrada
+                ? `| ${nombreLimpio} | • ${capacidadesTexto} | ${areaLimpia} |\n`
+                : `| ${nombreLimpio} | • ${capacidadesTexto} |\n`;
 
             // SECCIONES FUERA DE LA TABLA
             seccionesAdicionales += `
@@ -467,16 +493,13 @@ document.addEventListener('DOMContentLoaded', () => {
 ### ✅ Competencia ${numero}: ${comp.nombre}
 
 **📋 Estándar del Ciclo ${wizardData.ciclo}:**
-${comp.estandar}
+${sanitizeText(comp.estandar)}
 
 **🎯 Desempeños del ${wizardData.grado}:**
-${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.map((d, i) => `${i + 1}. ${d}`).join('\n') : '_Esta área no cuenta con desempeños específicos en el currículo._'}
+${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.map((d, i) => `${i + 1}. ${sanitizeText(d)}`).join('\n') : '_Esta área no cuenta con desempeños específicos en el currículo._'}
 
 **📊 Criterios de Evaluación:**
-${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).map((d, i) => `${i + 1}. ${d}`).join('\n') : '_Los criterios se establecerán según las capacidades de la competencia._'}
-
-**📊 Criterios de Evaluación:**
-${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).map((d, i) => `${i + 1}. ${d}`).join('\n') : '• No disponibles'}
+${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).map((d, i) => `${i + 1}. ${sanitizeText(d)}`).join('\n') : '_Los criterios se establecerán según las capacidades de la competencia._'}
 
 **📝 Evidencias:**
 - Informe escrito
