@@ -209,12 +209,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     function handleNextStep1() {
-        // Captura las competencias como objetos con más detalles
+        console.log('🟢🟢🟢 FUNCIÓN HANDLESTEP1 EJECUTADA 🟢🟢🟢');
+
         const nivel = nivelSelect.value;
         const grado = gradoSelect.value;
-        const ciclo = curriculoData[nivel].ciclosPorGrado[grado];
 
-        // Capturar áreas
+        console.log('📍 Nivel:', nivel);
+        console.log('📍 Grado:', grado);
+
+        if (!nivel || !grado) {
+            alert('❌ ERROR: Falta seleccionar nivel o grado');
+            console.error('Nivel o grado no seleccionado');
+            return;
+        }
+
+        const ciclo = curriculoData[nivel].ciclosPorGrado[grado];
+        console.log('📍 Ciclo:', ciclo);
+
         let areasSeleccionadas = [];
         if (nivel === "Inicial" || nivel === "Primaria") {
             areasSeleccionadas = Array.from(document.querySelectorAll('input[name="area-checkbox"]:checked')).map(cb => cb.value);
@@ -222,68 +233,88 @@ document.addEventListener('DOMContentLoaded', () => {
             areasSeleccionadas = [areaSelect.value];
         }
 
-        const competenciasSeleccionadas =
-            Array.from(document.querySelectorAll('input[name="competencia"]:checked'))
-                .map(cb => {
-                    const areaCompetencia = cb.dataset.area || areaSelect.value;
-                    const competenciaData = curriculoData[nivel].areas[areaCompetencia].competencias.find(c => c.nombre === cb.value);
+        console.log('📍 Áreas seleccionadas:', areasSeleccionadas);
 
-                    if (!competenciaData) {
-                        console.error('No se encontró competencia:', cb.value);
-                        return null;
-                    }
+        const competenciasSeleccionadas = [];
+        const checkboxes = document.querySelectorAll('input[name="competencia"]:checked');
 
-                    const gradoMapeado = mapGrado(grado);
-                    let desempenos = [];
+        console.log('📍 Total checkboxes marcados:', checkboxes.length);
 
-                    // Protección múltiple: verifica si existen desempeños
-                    if (competenciaData.desempenos && typeof competenciaData.desempenos === 'object') {
-                        desempenos = competenciaData.desempenos[gradoMapeado] || [];
-                    }
+        checkboxes.forEach((cb, idx) => {
+            console.log(`\n🔹 Procesando checkbox ${idx + 1}:`);
+            console.log('  value:', cb.value);
+            console.log('  dataset.area:', cb.dataset.area);
 
-                    return {
-                        nombre: competenciaData.nombre,
-                        capacidades: competenciaData.capacidades || [],
-                        estandar: competenciaData.estandares ? competenciaData.estandares[ciclo] : 'Estándar no disponible',
-                        desempenos: desempenos,
-                        area: areaCompetencia
-                    };
-                })
-                .filter(comp => comp !== null);
-        // Captura los enfoques transversales seleccionados
-        // Captura los enfoques transversales seleccionados CON SUS DATOS COMPLETOS
-        const enfoquesSeleccionados =
-            Array.from(document.querySelectorAll('input[name="enfoque"]:checked'))
-                .map(cb => {
-                    // Buscar el enfoque completo en data.js
-                    const enfoqueCompleto = enfoquesTransversales.find(e => e.nombre === cb.value);
-                    return {
-                        nombre: enfoqueCompleto.nombre,
-                        valores: enfoqueCompleto.valores,
-                        descripcion: enfoqueCompleto.descripcion
-                    };
-                });
+            const areaCompetencia = cb.dataset.area || areaSelect.value;
+            console.log('  área final:', areaCompetencia);
+
+            const competenciaData = curriculoData[nivel].areas[areaCompetencia].competencias.find(c => c.nombre === cb.value);
+
+            if (!competenciaData) {
+                console.error('❌ Competencia NO encontrada');
+                return;
+            }
+
+            console.log('  ✅ Competencia encontrada');
+
+            const gradoMapeado = mapGrado(grado);
+            console.log('  Grado mapeado:', gradoMapeado);
+
+            let desempenos = [];
+
+            if (competenciaData.desempenos) {
+                console.log('  Claves en desempenos:', Object.keys(competenciaData.desempenos));
+                desempenos = competenciaData.desempenos[gradoMapeado] || [];
+                console.log('  Desempeños encontrados:', desempenos.length);
+            } else {
+                console.log('  ⚠️ NO tiene propiedad desempenos');
+            }
+
+            competenciasSeleccionadas.push({
+                nombre: competenciaData.nombre,
+                capacidades: competenciaData.capacidades || [],
+                estandar: competenciaData.estandares ? competenciaData.estandares[ciclo] : 'Estándar no disponible',
+                desempenos: desempenos,
+                area: areaCompetencia
+            });
+        });
+
+        console.log('📍 Total competencias capturadas:', competenciasSeleccionadas.length);
+
+        const enfoquesSeleccionados = Array.from(document.querySelectorAll('input[name="enfoque"]:checked'))
+            .map(cb => {
+                const enfoqueCompleto = enfoquesTransversales.find(e => e.nombre === cb.value);
+                return {
+                    nombre: enfoqueCompleto.nombre,
+                    valores: enfoqueCompleto.valores,
+                    descripcion: enfoqueCompleto.descripcion
+                };
+            });
 
         wizardData = {
             ...wizardData,
             docente: document.getElementById('docente').value,
             director: document.getElementById('director').value,
             ie: document.getElementById('ie').value,
-            nivel: nivelSelect.value,
-            grado: gradoSelect.value,
+            nivel: nivel,
+            grado: grado,
             area: areasSeleccionadas.length > 1 ? areasSeleccionadas.join(' + ') : areasSeleccionadas[0],
             areasIntegradas: areasSeleccionadas,
             duracion: document.getElementById('duracion').value,
-            anioLectivo: document.getElementById('anio-lectivo').value, // ← NUEVA LÍNEA 1
-            periodo: document.getElementById('periodo').value, // ← NUEVA LÍNEA 2
-            numEstudiantes: document.getElementById('num-estudiantes').value, // ← NUEVA LÍNEA 3
-            turno: document.getElementById('turno').value, // ← NUEVA LÍNEA 4
+            anioLectivo: document.getElementById('anio-lectivo').value,
+            periodo: document.getElementById('periodo').value,
+            numEstudiantes: document.getElementById('num-estudiantes').value,
+            turno: document.getElementById('turno').value,
             fecha: fechaInput.value,
             competencias: competenciasSeleccionadas,
             enfoques: enfoquesSeleccionados,
-            ciclo: curriculoData[nivelSelect.value].ciclosPorGrado[gradoSelect.value],
+            ciclo: ciclo,
             competenciasTransversales: competenciasTransversales,
         };
+
+        console.log('📍 wizardData.competencias:', wizardData.competencias);
+        console.log('🟢🟢🟢 FIN HANDLESTEP1 🟢🟢🟢');
+
         goToStep(2);
     }
 
