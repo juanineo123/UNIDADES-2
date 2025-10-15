@@ -346,8 +346,14 @@ exports.handler = async (event) => {
                             children: [
                                 new TableCell({
                                     children: [
-                                        new Paragraph({ text: wizardData.docente || '', alignment: AlignmentType.CENTER }),
-                                        new Paragraph({ text: "Docente", alignment: AlignmentType.CENTER, bold: true })
+                                        new Paragraph({
+                                            children: [new TextRun({ text: wizardData.docente || '' })],
+                                            alignment: AlignmentType.CENTER
+                                        }),
+                                        new Paragraph({
+                                            children: [new TextRun({ text: "Docente", bold: true })],
+                                            alignment: AlignmentType.CENTER
+                                        })
                                     ]
                                 }),
                                 new TableCell({ children: [] }),
