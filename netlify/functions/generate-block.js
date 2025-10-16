@@ -161,9 +161,12 @@ Primera: diagnóstica. Última: sumativa + producto.`;
         case 'evaluacion':
             // Construir información de las competencias para la evaluación
             const competenciasEval = competencias.map(comp => {
+                const desempenosTexto = comp.desempenos && comp.desempenos.length > 0
+                    ? comp.desempenos.slice(0, 3).join(' | ')
+                    : 'No se especificaron desempeños para esta competencia';
                 return `
 **${comp.nombre}**
-Desempeños del grado: ${comp.desempenos.slice(0, 3).join(' | ')}
+Desempeños del grado: ${desempenosTexto}
         `;
             }).join('\n');
 
