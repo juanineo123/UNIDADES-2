@@ -141,11 +141,11 @@ document.addEventListener('DOMContentLoaded', () => {
             areaDiv.innerHTML = `<h4 class="text-cyan-300 font-bold mb-2">${area}</h4>`;
 
             const competencias = curriculoData[nivel].areas[area].competencias;
-            competencias.slice(0, 2).forEach(comp => {
+            competencias.forEach(comp => {
                 const label = document.createElement('label');
                 label.className = 'flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer';
                 label.innerHTML = `
-                <input type="checkbox" name="competencia" value="${comp.nombre}" data-area="${area}" class="mr-3 w-5 h-5 accent-cyan-400">
+                <input type="checkbox" name="competencia" value="${comp.nombre}" data-area="${area}" class="mr-3 w-5 h-5 accent-cyan-400" onchange="limitCompetenciasPorArea(this)">
                 <span class="text-sm">${comp.nombre}</span>
             `;
                 areaDiv.appendChild(label);
@@ -154,6 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
             competenciasContainer.appendChild(areaDiv);
         });
     };
+
+
 
     function updateCompetencias() {
         const nivel = nivelSelect.value;
@@ -167,7 +169,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const label = document.createElement('label');
                     label.className = 'flex items-center p-2 rounded-md hover:bg-cyan-900/50 cursor-pointer';
                     label.innerHTML = `
-                    <input type="checkbox" name="competencia" value="${comp.nombre}" data-area="${area}" class="mr-3 w-5 h-5 accent-cyan-400">
+                    <input type="checkbox" name="competencia" value="${comp.nombre}" data-area="${area}" class="mr-3 w-5 h-5 accent-cyan-400" onchange="limitCompetenciasPorArea(this)">
                     <span>${comp.nombre}</span>
                 `;
                     competenciasContainer.appendChild(label);
@@ -179,6 +181,34 @@ document.addEventListener('DOMContentLoaded', () => {
             competenciasContainer.innerHTML = '<p>Seleccione un área para ver las competencias.</p>';
         }
     }
+
+    // Función para limitar a 2 competencias por área
+
+    // Función para limitar competencias: 4 TOTALES + máximo 2 por área
+    window.limitCompetenciasPorArea = function (checkbox) {
+        const area = checkbox.dataset.area;
+
+        // Si está desmarcando, permitir
+        if (!checkbox.checked) return;
+
+        // 1️⃣ VALIDAR LÍMITE GLOBAL: Máximo 4 competencias TOTALES
+        const totalSeleccionadas = document.querySelectorAll(`input[name="competencia"]:checked`).length;
+
+        if (totalSeleccionadas > 4) {
+            checkbox.checked = false;
+            alert(`⚠️ LÍMITE ALCANZADO\n\nMáximo: 4 competencias en total\nYa has alcanzado el límite.\n\nDesmarca alguna competencia para seleccionar otra diferente.`);
+            return;
+        }
+
+        // 2️⃣ VALIDAR LÍMITE POR ÁREA: Máximo 2 por área
+        const checkboxesArea = document.querySelectorAll(`input[name="competencia"][data-area="${area}"]:checked`);
+
+        if (checkboxesArea.length > 2) {
+            checkbox.checked = false;
+            alert(`⚠️ Solo puedes seleccionar máximo 2 competencias por área.\n\nÁrea: ${area}\nYa tienes 2 competencias de esta área.`);
+            return;
+        }
+    };
 
     // === 5. FUNCIONES DE NAVEGACIÓN DEL WIZARD ===
     function goToStep(stepNumber) {
@@ -235,6 +265,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         console.log('📍 Áreas seleccionadas:', areasSeleccionadas);
 
+        // ✅ VALIDACIÓN: Verificar que hay áreas seleccionadas
+        if (areasSeleccionadas.length === 0 || !areasSeleccionadas[0]) {
+            alert('⚠️ ERROR: Debes seleccionar al menos UN área curricular.');
+            console.error('No se seleccionaron áreas');
+            return;
+        }
+
         const competenciasSeleccionadas = [];
         const checkboxes = document.querySelectorAll('input[name="competencia"]:checked');
 
@@ -279,7 +316,14 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        console.log('📍 Total competencias capturadas:', competenciasSeleccionadas.length);
+        console.log('📊 Total competencias capturadas:', competenciasSeleccionadas.length);
+
+        // ✅ VALIDACIÓN CRÍTICA: Verificar que hay competencias seleccionadas
+        if (competenciasSeleccionadas.length === 0) {
+            alert('⚠️ ERROR: Debes seleccionar al menos UNA competencia para continuar.');
+            console.error('No se seleccionaron competencias');
+            return;
+        }
 
         const enfoquesSeleccionados = Array.from(document.querySelectorAll('input[name="enfoque"]:checked'))
             .map(cb => {
@@ -319,6 +363,26 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleNextStep2() {
+        // ✅ VALIDACIÓN: Verificar campos obligatorios
+        const tituloUnidad = document.getElementById('titulo-unidad').value;
+        const temasClave = document.getElementById('temas-clave').value;
+        const contexto = document.getElementById('contexto').value;
+
+        if (!tituloUnidad || tituloUnidad.trim() === '') {
+            alert('⚠️ ERROR: El título de la unidad es obligatorio.');
+            return;
+        }
+
+        if (!temasClave || temasClave.trim() === '') {
+            alert('⚠️ ERROR: Los temas clave son obligatorios.');
+            return;
+        }
+
+        if (!contexto || contexto.trim() === '') {
+            alert('⚠️ ERROR: El contexto de los estudiantes es obligatorio.');
+            return;
+        }
+
         wizardData = {
             ...wizardData,
             tituloUnidad: document.getElementById('titulo-unidad').value,
@@ -430,15 +494,15 @@ document.addEventListener('DOMContentLoaded', () => {
     function generateStaticContent(blockId) {
         switch (blockId) {
             case 'titulo':
-                return `### ${wizardData.tituloUnidad}`;
+                return `### ${sanitizeText(wizardData.tituloUnidad)}`;
             case 'datos':
                 return `
 | Campo | Valor | Campo | Valor |
 | :--- | :--- | :--- | :--- |
-| **Docente** | ${wizardData.docente} | **Director/a** | ${wizardData.director} |
-| **I.E.** | ${wizardData.ie} | **Nivel** | ${wizardData.nivel} |
+| **Docente** | ${sanitizeText(wizardData.docente)} | **Director/a** | ${sanitizeText(wizardData.director)} |
+| **I.E.** | ${sanitizeText(wizardData.ie)} | **Nivel** | ${wizardData.nivel} |
 | **Grado** | ${wizardData.grado} | **Ciclo** | ${wizardData.ciclo} |
-| **Área** | ${wizardData.area} | **Año Lectivo** | ${wizardData.anioLectivo} |
+| **Área** | ${sanitizeText(wizardData.area)} | **Año Lectivo** | ${wizardData.anioLectivo} |
 | **Periodo** | ${wizardData.periodo} | **Duración** | ${wizardData.duracion} semana(s) |
 | **Nº Estudiantes** | ${wizardData.numEstudiantes} | **Turno** | ${wizardData.turno} |
 | **Fecha** | ${wizardData.fecha} | | |
@@ -465,12 +529,12 @@ document.addEventListener('DOMContentLoaded', () => {
         <tr style="background-color:transparent;">
             <td style="width:50%; text-align:center; border:none; padding:20px; vertical-align:bottom;">
                 <p style="border-top:1px solid black; width:250px; margin:0 auto 8px auto;">&nbsp;</p>
-                ${wizardData.docente}<br>
+                ${sanitizeText(wizardData.docente)}<br>
                 <strong>Docente</strong>
             </td>
             <td style="width:50%; text-align:center; border:none; padding:20px; vertical-align:bottom;">
                 <p style="border-top:1px solid black; width:250px; margin:0 auto 8px auto;">&nbsp;</p>
-                ${wizardData.director}<br>
+                ${sanitizeText(wizardData.director)}<br>
                 <strong>Director/a</strong>
             </td>
         </tr>
@@ -484,12 +548,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function sanitizeText(text) {
         if (!text || typeof text !== 'string') return '';
-        return text
+        let sanitized = text
             .replace(/[<>]/g, '') // Eliminar < y >
-            .replace(/\|/g, 'ǀ') // Reemplazar pipes que rompen tablas
+            .replace(/\|/g, 'Ɇ') // Reemplazar pipes que rompen tablas
             .replace(/\n+/g, ' ') // Saltos de línea → espacios
             .replace(/\s+/g, ' ') // Múltiples espacios → uno solo
             .trim();
+
+        // Truncar textos excesivamente largos
+        if (sanitized.length > 1000) {
+            sanitized = sanitized.substring(0, 1000) + '...';
+        }
+
+        return sanitized;
+    }
+
+    function sanitizeFilename(text) {
+        if (!text || typeof text !== 'string') return 'Unidad';
+        return text
+            .replace(/[/\\:*?"<>|]/g, '') // Eliminar caracteres inválidos en nombres de archivo
+            .replace(/\s+/g, ' ') // Múltiples espacios → uno solo
+            .trim()
+            .substring(0, 100); // Máximo 100 caracteres para el nombre
     }
 
     function buildPropositos() {
@@ -509,7 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         wizardData.competencias.forEach((comp, index) => {
             const numero = index + 1;
-            const capacidadesTexto = comp.capacidades.join('<br>• ');
+            const capacidadesTexto = comp.capacidades.map(cap => sanitizeText(cap)).join('<br>• ');
 
             // TABLA SIMPLE
             const nombreLimpio = sanitizeText(comp.nombre);
@@ -527,10 +607,10 @@ document.addEventListener('DOMContentLoaded', () => {
 ${sanitizeText(comp.estandar)}
 
 **🎯 Desempeños del ${wizardData.grado}:**
-${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.map((d, i) => `${i + 1}. ${sanitizeText(d)}`).join('\n') : '_Esta área no cuenta con desempeños específicos en el currículo._'}
+${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.filter(d => d && typeof d === 'string').map((d, i) => `${i + 1}. ${sanitizeText(d)}`).join('\n') : '_Esta área no cuenta con desempeños específicos en el currículo._'}
 
 **📊 Criterios de Evaluación:**
-${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).map((d, i) => `${i + 1}. ${sanitizeText(d)}`).join('\n') : '_Los criterios se establecerán según las capacidades de la competencia._'}
+${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.filter(d => d && typeof d === 'string').slice(0, 2).map((d, i) => `${i + 1}. ${sanitizeText(d)}`).join('\n') : '_Los criterios se establecerán según las capacidades de la competencia._'}
 
 **📝 Evidencias:**
 - Informe escrito
@@ -551,11 +631,11 @@ ${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).ma
         const ct = wizardData.competenciasTransversales;
 
         ct.forEach(competencia => {
-            const capacidades = competencia.capacidades.slice(0, 2).join('<br>• ');
-            const desempenos = `• Los estudiantes organizan su tiempo de trabajo<br>• Reflexionan sobre su proceso de aprendizaje relacionado con ${wizardData.temasClave}`;
+            const capacidades = competencia.capacidades.slice(0, 2).map(cap => sanitizeText(cap)).join('<br>• ');
+            const desempenos = `• Los estudiantes organizan su tiempo de trabajo<br>• Reflexionan sobre su proceso de aprendizaje relacionado con ${sanitizeText(wizardData.temasClave)}`;
             const evidencias = 'Cuaderno de trabajo<br>Autoevaluación';
 
-            contenido += `| ${competencia.nombre} | • ${capacidades} | ${desempenos} | ${evidencias} |\n`;
+            contenido += `| ${sanitizeText(competencia.nombre)} | • ${capacidades} | ${desempenos} | ${evidencias} |\n`;
         });
 
         return contenido;
@@ -566,11 +646,11 @@ ${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).ma
         contenido += '|---------------------|---------|------------------------|---------------------|\n';
 
         wizardData.enfoques.forEach(enfoque => {
-            const valores = enfoque.valores.join(', ');
-            const actitudesEst = `• Respetan las diferencias<br>• Participan activamente en ${wizardData.temasClave}<br>• Demuestran interés por aprender`;
-            const actitudesDoc = `• Promueve el respeto mutuo<br>• Genera espacios de diálogo<br>• Contextualiza al entorno: ${wizardData.contexto}`;
+            const valores = enfoque.valores.map(v => sanitizeText(v)).join(', ');
+            const actitudesEst = `• Respetan las diferencias<br>• Participan activamente en ${sanitizeText(wizardData.temasClave)}<br>• Demuestran interés por aprender`;
+            const actitudesDoc = `• Promueve el respeto mutuo<br>• Genera espacios de diálogo<br>• Contextualiza al entorno: ${sanitizeText(wizardData.contexto)}`;
 
-            contenido += `| ${enfoque.nombre} | ${valores} | ${actitudesEst} | ${actitudesDoc} |\n`;
+            contenido += `| ${sanitizeText(enfoque.nombre)} | ${valores} | ${actitudesEst} | ${actitudesDoc} |\n`;
         });
 
         return contenido;
@@ -582,10 +662,10 @@ ${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).ma
 
         wizardData.competencias.forEach(comp => {
             const criterios = comp.desempenos && comp.desempenos.length > 0
-                ? comp.desempenos.slice(0, 2).map(d => '• ' + d.split('.')[0]).join('<br>')
+                ? comp.desempenos.filter(d => d && typeof d === 'string').slice(0, 2).map(d => '• ' + sanitizeText(d.split('.')[0])).join('<br>')
                 : '• Los desempeños ya descritos en la sección VII';
 
-            contenido += `| ${comp.nombre} | ${criterios} | Informe<br>Exposición | Rúbrica<br>Lista de cotejo | Formativa/Proceso |\n`;
+            contenido += `| ${sanitizeText(comp.nombre)} | ${criterios} | Informe<br>Exposición | Rúbrica<br>Lista de cotejo | Formativa/Proceso |\n`;
         });
 
         return contenido;
@@ -601,8 +681,13 @@ ${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).ma
     async function fetchWithRetries(url, options, retries = 3, delay = 2500) {
         for (let i = 0; i < retries; i++) {
             try {
-                // Intento de realizar la petición
+                // ✅ El signal se pasa automáticamente en options
                 const response = await fetch(url, options);
+
+                // ✅ Si el signal fue abortado, salir inmediatamente
+                if (options.signal && options.signal.aborted) {
+                    throw new DOMException('Aborted', 'AbortError');
+                }
 
                 // Si la respuesta es exitosa (ej. status 200-299), la devolvemos.
                 if (response.ok) {
@@ -649,42 +734,116 @@ ${comp.desempenos && comp.desempenos.length > 0 ? comp.desempenos.slice(0, 3).ma
     // === 7. FUNCIÓN DE DESCARGA REESTRUCTURADA ===
     async function handleDownload() {
         console.log("main.js: Solicitud de descarga al servidor...");
+        // 🛡️ VALIDACIÓN EXHAUSTIVA ANTES DE ENVIAR
+        if (!wizardData || Object.keys(wizardData).length === 0) {
+            alert('❌ ERROR: No hay datos de la unidad. Por favor, genera la unidad primero.');
+            console.error('wizardData vacío:', wizardData);
+            return;
+        }
+
+        if (!generatedMarkdownContent || Object.keys(generatedMarkdownContent).length === 0) {
+            alert('❌ ERROR: No hay contenido generado. Por favor, genera la unidad primero.');
+            console.error('generatedMarkdownContent vacío:', generatedMarkdownContent);
+            return;
+        }
+
+        // Validar campos críticos de wizardData
+        const camposCriticos = ['nivel', 'grado', 'area', 'tituloUnidad', 'competencias'];
+        const camposFaltantes = camposCriticos.filter(campo => !wizardData[campo]);
+
+        if (camposFaltantes.length > 0) {
+            alert(`❌ ERROR: Faltan datos críticos: ${camposFaltantes.join(', ')}`);
+            console.error('Campos faltantes:', camposFaltantes);
+            return;
+        }
+
+        // Validar que haya al menos contenido básico generado
+        const seccionesMinimas = ['titulo', 'datos', 'propositos-aprendizaje'];
+        const seccionesFaltantes = seccionesMinimas.filter(sec => !generatedMarkdownContent[sec]);
+
+        if (seccionesFaltantes.length > 0) {
+            console.warn('⚠️ Advertencia: Faltan secciones:', seccionesFaltantes);
+            if (!confirm('Algunas secciones no se generaron correctamente. ¿Deseas continuar con la descarga de todas formas?')) {
+                return;
+            }
+        }
+
+        const esCompleja = wizardData.competencias.length >= 4 ||
+            (wizardData.areasIntegradas && wizardData.areasIntegradas.length > 2);
+
+        if (esCompleja) {
+            const continuar = confirm(
+                '⚠️ Esta es una unidad compleja con mucho contenido.\n\n' +
+                'La generación del documento puede tardar entre 8 a 10 segundos.\n\n' +
+                '¿Deseas continuar?'
+            );
+            if (!continuar) return;
+        }
+        // ⬆️ FIN DEL CÓDIGO NUEVO ⬆️
         btnDownload.disabled = true;
         btnDownload.textContent = 'Generando .docx en servidor...';
 
         try {
-            // El endpoint de la función de Netlify.
-            // Corresponde a netlify/functions/generate-word.js
             const endpoint = '/.netlify/functions/generate-word';
 
-            const response = await fetchWithRetries(endpoint, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ wizardData, generatedMarkdownContent })
-            });
+            // 🛡️ PASO 1: Crear controlador de timeout (CÓDIGO NUEVO)
+            // 🛡️ PASO 1: Crear controlador de timeout ajustado a límite Netlify
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 segundos (margen sobre 10 seg de Netlify)
 
-            if (!response.ok) {
-                throw new Error(`Error del servidor: ${response.statusText}`);
+            try {
+                // 🛡️ PASO 2: Agregar signal al fetch (MODIFICACIÓN)
+                const response = await fetchWithRetries(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ wizardData, generatedMarkdownContent }),
+                    signal: controller.signal  // ⬅️ LÍNEA NUEVA
+                });
+
+                // 🛡️ PASO 3: Limpiar timeout si fue exitoso (CÓDIGO NUEVO)
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    throw new Error(`Error del servidor: ${response.statusText}`);
+                }
+
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = `Unidad de Aprendizaje - ${sanitizeFilename(wizardData.tituloUnidad || 'Sin Titulo')}.docx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+
+                // 🛡️ PASO 4: ESTE ES EL CATCH QUE VA "ANTES DEL } catch (error) {" (CÓDIGO NUEVO)
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                if (fetchError.name === 'AbortError') {
+                    throw new Error('timeout: La generación del documento tardó más de 2 minutos');
+                }
+                throw fetchError;
             }
-
-            // El navegador se encargará de la descarga gracias a las cabeceras
-            // que enviamos desde la función de Netlify.
-            // Para que funcione, necesitamos convertir la respuesta en un blob
-            // y crear una URL para descargarla.
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `Unidad de Aprendizaje - ${wizardData.tituloUnidad || 'Sin Titulo'}.docx`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            a.remove();
+            // ⬆️ ESTE CIERRE } catch (fetchError) VA JUSTO ANTES DEL SIGUIENTE ⬇️
 
         } catch (error) {
-            console.error("Error al solicitar la descarga del documento:", error);
-            alert("No se pudo generar el documento. Hubo un error al comunicarse con el servidor.");
+            console.error("❌ Error crítico en descarga:", error);
+
+            let errorMessage = "No se pudo generar el documento.";
+
+            if (error.message.includes('Failed to fetch')) {
+                errorMessage += "\n\n🌐 Problema de conexión con el servidor.\n\n✅ Verifica tu conexión a internet.";
+            } else if (error.message.includes('timeout')) {
+                errorMessage += "\n\n⏱️ El servidor tardó más de 2 minutos en responder.\n\n✅ Intenta generar la unidad nuevamente o reduce la complejidad.";
+            } else if (error.message.includes('500')) {
+                errorMessage += "\n\n⚙️ Error interno del servidor.\n\n✅ Intenta nuevamente en unos momentos.";
+            } else {
+                errorMessage += `\n\n💬 Detalles: ${error.message}`;
+            }
+
+            alert(errorMessage);
         } finally {
             btnDownload.disabled = false;
             btnDownload.textContent = 'Descargar en Word';
